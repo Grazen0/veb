@@ -1,3 +1,6 @@
+#ifndef VEB_VEB_HPP
+#define VEB_VEB_HPP
+
 #include <array>
 #include <bitset>
 #include <cassert>
@@ -278,36 +281,9 @@ public:
             return;
         }
 
-        m_min = (x == 0);
+        m_min = ~x;
         m_max = m_min;
     }
 };
 
-int main()
-{
-    auto veb = std::make_unique<Veb<8>>();
-
-    veb->insert(43);
-    veb->insert(1);
-    veb->insert(6);
-
-    std::cout << std::boolalpha;
-    std::cout << veb->member(1) << "\n";
-    std::cout << veb->member(6) << "\n";
-    std::cout << veb->member(42) << "\n";
-    std::cout << veb->member(3) << "\n";
-    std::cout << veb->member(0) << "\n";
-    std::cout << veb->predecessor(7)->to_ullong() << "\n";
-    std::cout << "\n";
-
-    veb->remove(1);
-    veb->remove(42);
-
-    std::cout << veb->member(1) << "\n";
-    std::cout << veb->member(6) << "\n";
-    std::cout << veb->member(42) << "\n";
-    std::cout << veb->member(3) << "\n";
-    std::cout << veb->member(0) << "\n";
-
-    return 0;
-}
+#endif
