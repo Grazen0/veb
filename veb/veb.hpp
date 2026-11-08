@@ -62,16 +62,6 @@ private:
     std::optional<std::bitset<W>> m_min;
     std::optional<std::bitset<W>> m_max;
 
-    constexpr void empty_tree_insert(const std::bitset<W>& x)
-    {
-        assert(!m_min);
-        assert(!m_max);
-        m_min = x;
-        m_max = x;
-    }
-
-    friend class Veb<2 * W>;
-
 public:
     Veb() = default;
 
@@ -148,7 +138,9 @@ public:
     void insert(std::bitset<W> x)
     {
         if (!m_min) {
-            empty_tree_insert(x);
+            assert(!m_max);
+            m_min = x;
+            m_max = x;
             return;
         }
 
@@ -158,12 +150,10 @@ public:
         auto [hi, lo] = split(x);
         auto& hi_cluster = m_clusters.at(hi.to_ullong());
 
-        if (!hi_cluster.minimum()) {
+        if (!hi_cluster.minimum())
             m_summary.insert(hi);
-            hi_cluster.empty_tree_insert(lo);
-        } else {
-            hi_cluster.insert(lo);
-        }
+
+        hi_cluster.insert(lo);
 
         if (x.to_ullong() > m_max->to_ullong())
             m_max = x;
@@ -209,19 +199,8 @@ public:
 template<>
 class Veb<1> {
 private:
-    std::bitset<2> m_bits;
     std::optional<std::bitset<1>> m_min;
     std::optional<std::bitset<1>> m_max;
-
-    constexpr void empty_tree_insert(const std::bitset<1>& x)
-    {
-        assert(!m_min);
-        assert(!m_max);
-        m_min = x;
-        m_max = x;
-    }
-
-    friend class Veb<2>;
 
 public:
     Veb() = default;
@@ -262,7 +241,9 @@ public:
     void insert(std::bitset<1> x)
     {
         if (!m_min) {
-            empty_tree_insert(x);
+            assert(!m_max);
+            m_min = x;
+            m_max = x;
             return;
         }
 
