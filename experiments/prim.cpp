@@ -1,11 +1,52 @@
+#include "numeric_queue.hpp"
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <optional>
 #include <utility>
 #include <veb.hpp>
 #include <vector>
+
+namespace
+{
+    template<template<std::size_t W, typename T> typename Queue>
+    using PrimQueue = Queue<32, std::size_t>;
+
+    template<template<std::size_t W, typename T> typename Queue>
+        requires(numeric_queue<PrimQueue<Queue>>)
+    std::optional<std::uint64_t>
+    prim(const std::vector<std::vector<std::pair<std::size_t, std::uint32_t>>>&
+             adj)
+    {
+        std::size_t n = adj.size();
+        std::vector<bool> vis(n);
+        PrimQueue<Queue> q;
+
+        std::uint64_t cost = 0;
+        q.push(0, 0);
+
+        while (!q.empty()) {
+            auto [w_bits, i] = q.pop();
+            if (vis[i])
+                continue;
+
+            vis[i] = true;
+            cost += w_bits.to_ulong();
+
+            for (auto [j, w] : adj[i])
+                q.push(w, j);
+        }
+
+        for (std::size_t i = 0; i < n; ++i) {
+            if (!vis[i])
+                return std::nullopt;
+        }
+
+        return cost;
+    }
+} // namespace
 
 int main()
 {
@@ -14,7 +55,6 @@ int main()
     std::cin >> n >> m;
 
     std::vector<std::vector<std::pair<std::size_t, std::uint32_t>>> adj(n);
-    std::vector<bool> vis(n);
 
     for (std::size_t i = 0; i < m; ++i) {
         std::size_t a = 0;
@@ -27,38 +67,11 @@ int main()
         adj[b].emplace_back(a, w);
     }
 
-    Veb<32, std::vector<std::size_t>> veb;
+    auto ans = prim<VebQueue>(adj);
+    if (!ans)
+        std::cout << "IMPOSSIBLE\n";
+    else
+        std::cout << *ans << "\n";
 
-    std::uint64_t ans = 0;
-    veb[0].emplace_back(0);
-
-    while (!veb.empty()) {
-        auto [w_bits, vs] = *veb.minimum();
-        assert(!vs->empty());
-
-        std::size_t i = vs->back();
-        vs->pop_back();
-        if (vs->empty())
-            veb.erase(w_bits);
-
-        if (vis[i])
-            continue;
-
-        std::uint32_t w = w_bits.to_ullong();
-        vis[i] = true;
-        ans += w;
-
-        for (auto [j, w] : adj[i])
-            veb[w].emplace_back(j);
-    }
-
-    for (std::size_t i = 0; i < n; ++i) {
-        if (!vis[i]) {
-            std::cout << "IMPOSSIBLE\n";
-            return 0;
-        }
-    }
-
-    std::cout << ans << "\n";
     return 0;
 }

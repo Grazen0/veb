@@ -62,9 +62,12 @@ experiment_dependencies = [
   veb_dep,
 ]
 
+experiment_inc_dirs = include_directories('experiments')
+
 dijkstra_exe = executable(
   'dijkstra',
   'experiments/dijkstra.cpp',
+  include_directories : experiment_inc_dirs,
   dependencies : dependencies + experiment_dependencies,
   link_with : lib,
 )
@@ -72,6 +75,7 @@ dijkstra_exe = executable(
 prim_exe = executable(
   'prim',
   'experiments/prim.cpp',
+  include_directories : experiment_inc_dirs,
   dependencies : dependencies + experiment_dependencies,
   link_with : lib,
 )
@@ -79,6 +83,7 @@ prim_exe = executable(
 huffman_exe = executable(
   'huffman',
   'experiments/huffman.cpp',
+  include_directories : experiment_inc_dirs,
   dependencies : dependencies + experiment_dependencies,
   link_with : lib,
 )

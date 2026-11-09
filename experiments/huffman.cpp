@@ -1,36 +1,19 @@
-#include "veb.hpp"
+#include "numeric_queue.hpp"
 #include <cassert>
 #include <cstddef>
 #include <iostream>
 #include <memory>
+#include <utility>
 #include <vector>
-
-struct Node {
-    std::uint64_t val;
-    std::unique_ptr<Node> left;
-    std::unique_ptr<Node> right;
-
-    explicit Node(std::uint64_t val)
-        : val{val}
-    {
-    }
-
-    Node(std::uint64_t val, std::unique_ptr<Node> left,
-         std::unique_ptr<Node> right)
-        : val{val},
-          left{std::move(left)},
-          right{std::move(right)}
-    {
-    }
-
-    bool operator<(const Node& o) const
-    {
-        return val > o.val;
-    }
-};
 
 namespace
 {
+    struct Node {
+        std::uint64_t val;
+        std::unique_ptr<Node> left;
+        std::unique_ptr<Node> right;
+    };
+
     void dfs(const Node& node, std::size_t depth, std::uint64_t& ans)
     {
         if (!node.left) {
@@ -40,6 +23,34 @@ namespace
 
         dfs(*node.left, depth + 1, ans);
         dfs(*node.right, depth + 1, ans);
+    }
+
+    template<template<std::size_t, typename> typename Queue>
+    using HuffmanQueue = Queue<64, std::unique_ptr<Node>>;
+
+    template<template<std::size_t W, typename T> typename Queue>
+        requires(numeric_queue<HuffmanQueue<Queue>>)
+    std::uint64_t huffman(const std::vector<std::uint64_t>& freqs)
+    {
+        HuffmanQueue<Queue> q;
+
+        for (auto f : freqs)
+            q.push(f, std::make_unique<Node>(f));
+
+        for (std::size_t i = 0; i < freqs.size() - 1; ++i) {
+            auto left = q.pop().second;
+            auto right = q.pop().second;
+            std::uint64_t sum = left->val + right->val;
+            q.push(sum, std::make_unique<Node>(sum, std::move(left),
+                                               std::move(right)));
+        }
+
+        assert(!q.empty());
+        auto root = q.pop().second;
+
+        std::uint64_t ans = 0;
+        dfs(*root, 1, ans);
+        return ans;
     }
 } // namespace
 
@@ -51,41 +62,12 @@ int main()
     while (t-- != 0) {
         std::size_t n = 0;
         std::cin >> n;
+        std::vector<std::uint64_t> freqs(n);
 
-        Veb<64, std::vector<std::unique_ptr<Node>>> veb;
-        for (std::size_t i = 0; i < n; ++i) {
-            std::uint64_t f = 0;
-            std::cin >> f;
-            veb[f].emplace_back(std::make_unique<Node>(f));
-        }
+        for (std::size_t i = 0; i < n; ++i)
+            std::cin >> freqs[i];
 
-        for (std::size_t i = 0; i < n - 1; ++i) {
-            auto [kl, vl] = *veb.minimum();
-            assert(!vl->empty());
-            auto left = std::move(vl->back());
-            vl->pop_back();
-            if (vl->empty())
-                veb.erase(kl);
-
-            auto [kr, vr] = *veb.minimum();
-            assert(!vr->empty());
-            auto right = std::move(vr->back());
-            vr->pop_back();
-            if (vr->empty())
-                veb.erase(kr);
-
-            auto comb = std::make_unique<Node>(
-                left->val + right->val, std::move(left), std::move(right));
-            veb[comb->val].emplace_back(std::move(comb));
-        }
-
-        assert(!veb.empty());
-        auto [k, vs] = *veb.minimum();
-        auto& root = vs->front();
-
-        std::uint64_t ans = 0;
-        dfs(*root, 1, ans);
-        std::cout << ans << "\n";
+        std::cout << huffman<VebQueue>(freqs) << "\n";
     }
 
     return 0;
