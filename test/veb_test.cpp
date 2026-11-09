@@ -15,18 +15,6 @@
 #include <veb.hpp>
 #include <vector>
 
-// ---------------------------------------------------------------------------
-// API assumed by these tests:
-//   void                      insert(Key, V)           upsert
-//   bool                      remove(Key)              true iff it existed
-//   bool                      member(Key) const
-//   const V* / V*             get(Key) const / get(Key) nullptr if absent
-//   optional<Key>             min_key() / max_key() / successor() /
-//                             predecessor()
-//   optional<pair<Key, V*>>   minimum() / maximum() (mutable)
-//   optional<pair<Key, const V*>> minimum() / maximum() (const)
-// ---------------------------------------------------------------------------
-
 namespace
 {
     using u64 = unsigned long long;
@@ -48,10 +36,10 @@ namespace
     template<std::size_t W, typename V>
     std::optional<V> lookup(const Veb<W, V>& veb, u64 key)
     {
-        const V* p = veb.get(Bits<W>(key));
-        if (!p)
+        if (!veb.count(Bits<W>(key)))
             return std::nullopt;
-        return *p;
+
+        return veb.at(Bits<W>(key));
     }
 
     template<std::size_t W>
@@ -144,8 +132,8 @@ namespace
     {
         const bool in = m.count(x) == 1;
 
-        if (veb.member(Bits<W>(x)) != in)
-            os << "member(" << x << ") expected " << in << "; ";
+        if (veb.count(Bits<W>(x)) != in)
+            os << "count(" << x << ") expected " << in << "; ";
 
         auto s = val(veb.successor(Bits<W>(x)));
         if (s != ref_succ(m, x))
@@ -156,18 +144,6 @@ namespace
         if (p != ref_pred(m, x))
             os << "predecessor(" << x << ") got " << fmt(p) << " expected "
                << fmt(ref_pred(m, x)) << "; ";
-
-        const int* ptr = veb.get(Bits<W>(x));
-        if (in) {
-            if (!ptr)
-                os << "get(" << x << ") returned nullptr, expected " << m.at(x)
-                   << "; ";
-            else if (*ptr != m.at(x))
-                os << "get(" << x << ") -> " << *ptr << " expected " << m.at(x)
-                   << "; ";
-        } else if (ptr) {
-            os << "get(" << x << ") expected nullptr, got " << *ptr << "; ";
-        }
     }
 
     template<std::size_t W>
@@ -223,11 +199,11 @@ namespace
                 put(k);
         }
 
-        // remove, asserting the returned bool matches the model
+        // erase, asserting the returned bool matches the model
         bool erase(u64 k)
         {
             const bool expected = model.erase(k) == 1;
-            const bool got = veb->remove(Bits<W>(k));
+            const bool got = veb->erase(Bits<W>(k));
             CAPTURE(W, k);
             REQUIRE(got == expected);
             return got;
@@ -235,16 +211,15 @@ namespace
 
         bool has(u64 k) const
         {
-            return veb->member(Bits<W>(k));
+            return veb->count(Bits<W>(k));
         }
 
         OptInt get(u64 k) const
         {
             const Veb<W, int>& cv = *veb;
-            const int* p = cv.get(Bits<W>(k));
-            if (!p)
+            if (!cv.count(Bits<W>(k)))
                 return std::nullopt;
-            return *p;
+            return cv.at(Bits<W>(k));
         }
 
         Opt succ(u64 k) const
@@ -329,11 +304,11 @@ TEST_CASE("misc veb operations", "[veb]")
     veb->insert(2, 20);
     veb->insert(3, 30);
 
-    REQUIRE(veb->member(1));
-    REQUIRE(veb->member(2));
-    REQUIRE(veb->member(3));
-    REQUIRE(!veb->member(4));
-    REQUIRE(!veb->member(42));
+    REQUIRE(veb->count(1));
+    REQUIRE(veb->count(2));
+    REQUIRE(veb->count(3));
+    REQUIRE(!veb->count(4));
+    REQUIRE(!veb->count(42));
 
     REQUIRE(lookup(*veb, 1) == OptInt{10});
     REQUIRE(lookup(*veb, 2) == OptInt{20});
@@ -357,7 +332,7 @@ TEMPLATE_TEST_CASE_SIG("empty veb", "[veb][empty]", ((std::size_t W), W), 1, 2,
         REQUIRE(!h.has(x));
         REQUIRE(!h.succ(x).has_value());
         REQUIRE(!h.pred(x).has_value());
-        REQUIRE(h.veb->get(Bits<W>(x)) == nullptr);
+        REQUIRE_THROWS(h.veb->at(Bits<W>(x)));
         REQUIRE(!h.erase(x));
     }
     h.check_all();
@@ -414,11 +389,11 @@ TEMPLATE_TEST_CASE_SIG("single element", "[veb][single]", ((std::size_t W), W),
             h.check_all();
         }
 
-        SECTION("remove it")
+        SECTION("erase it")
         {
             REQUIRE(h.erase(k));
             REQUIRE(!h.has(k));
-            REQUIRE(h.veb->get(Bits<W>(k)) == nullptr);
+            REQUIRE_THROWS(h.veb->at(Bits<W>(k)));
             REQUIRE(!h.min().has_value());
             REQUIRE(!h.max().has_value());
             REQUIRE(!h.veb->minimum().has_value());
@@ -513,7 +488,7 @@ TEST_CASE("veb of width 1", "[veb][w1]")
         h.check_all();
     }
 
-    SECTION("remove from a full tree")
+    SECTION("erase from a full tree")
     {
         h.put(0, 1);
         h.put(1, 2);
@@ -525,7 +500,7 @@ TEST_CASE("veb of width 1", "[veb][w1]")
         h.check_all();
     }
 
-    SECTION("remove the other one")
+    SECTION("erase the other one")
     {
         h.put(0, 1);
         h.put(1, 2);
@@ -537,7 +512,7 @@ TEST_CASE("veb of width 1", "[veb][w1]")
         h.check_all();
     }
 
-    SECTION("remove everything then reuse")
+    SECTION("erase everything then reuse")
     {
         h.put(0, 1);
         h.put(1, 2);
@@ -555,10 +530,10 @@ TEST_CASE("veb of width 1", "[veb][w1]")
 }
 
 // ---------------------------------------------------------------------------
-// insert / member
+// insert / count
 // ---------------------------------------------------------------------------
 
-TEST_CASE("insert and member on Veb<8>", "[veb][member][insert]")
+TEST_CASE("insert and count on Veb<8>", "[veb][count][insert]")
 {
     H<8> h;
 
@@ -659,13 +634,13 @@ TEST_CASE("get returns a pointer to the stored value", "[veb][get]")
 
     SECTION("absent keys give nullptr")
     {
-        REQUIRE(veb->get(Bits<8>(5)) == nullptr);
+        REQUIRE_THROWS(veb->at(Bits<8>(5)));
         veb->insert(5, 50);
         veb->insert(9, 90);
-        REQUIRE(veb->get(Bits<8>(4)) == nullptr);
-        REQUIRE(veb->get(Bits<8>(6)) == nullptr);
-        REQUIRE(veb->get(Bits<8>(0)) == nullptr);
-        REQUIRE(veb->get(Bits<8>(255)) == nullptr);
+        REQUIRE_THROWS(veb->at(Bits<8>(4)));
+        REQUIRE_THROWS(veb->at(Bits<8>(6)));
+        REQUIRE_THROWS(veb->at(Bits<8>(0)));
+        REQUIRE_THROWS(veb->at(Bits<8>(255)));
     }
 
     SECTION("present keys give a valid pointer to their value")
@@ -674,15 +649,12 @@ TEST_CASE("get returns a pointer to the stored value", "[veb][get]")
         veb->insert(9, 90);
         veb->insert(200, 2000);
 
-        int* p5 = veb->get(Bits<8>(5));
-        int* p9 = veb->get(Bits<8>(9));
-        int* p200 = veb->get(Bits<8>(200));
-        REQUIRE(p5 != nullptr);
-        REQUIRE(p9 != nullptr);
-        REQUIRE(p200 != nullptr);
-        REQUIRE(*p5 == 50);
-        REQUIRE(*p9 == 90);
-        REQUIRE(*p200 == 2000);
+        int p5 = veb->at(Bits<8>(5));
+        int p9 = veb->at(Bits<8>(9));
+        int p200 = veb->at(Bits<8>(200));
+        REQUIRE(p5 == 50);
+        REQUIRE(p9 == 90);
+        REQUIRE(p200 == 2000);
 
         // distinct keys have distinct storage
         REQUIRE(p5 != p9);
@@ -696,10 +668,9 @@ TEST_CASE("get returns a pointer to the stored value", "[veb][get]")
         veb->insert(9, 90);
         const Veb<8, int>& cv = *veb;
 
-        const int* p = cv.get(Bits<8>(9));
-        REQUIRE(p != nullptr);
-        REQUIRE(*p == 90);
-        REQUIRE(cv.get(Bits<8>(10)) == nullptr);
+        const int p = cv.at(Bits<8>(9));
+        REQUIRE(p == 90);
+        REQUIRE_THROWS(cv.at(Bits<8>(10)));
 
         auto mn = cv.minimum();
         auto mx = cv.maximum();
@@ -720,14 +691,14 @@ TEST_CASE("get returns a pointer to the stored value", "[veb][get]")
         veb->insert(9, 90); // middle
         veb->insert(200, 2000); // maximum
 
-        *veb->get(Bits<8>(9)) = 91;
+        veb->at(Bits<8>(9)) = 91;
         REQUIRE(lookup(*veb, 9) == OptInt{91});
 
-        *veb->get(Bits<8>(5)) = 51;
+        veb->at(Bits<8>(5)) = 51;
         REQUIRE(lookup(*veb, 5) == OptInt{51});
         REQUIRE(*veb->minimum()->second == 51);
 
-        *veb->get(Bits<8>(200)) = 2001;
+        veb->at(Bits<8>(200)) = 2001;
         REQUIRE(lookup(*veb, 200) == OptInt{2001});
         REQUIRE(*veb->maximum()->second == 2001);
 
@@ -735,8 +706,8 @@ TEST_CASE("get returns a pointer to the stored value", "[veb][get]")
         auto mutable_max = veb->maximum();
         static_assert(std::is_same_v<decltype(mutable_min->second), int*>);
         static_assert(std::is_same_v<decltype(mutable_max->second), int*>);
-        REQUIRE(mutable_min->second == veb->get(Bits<8>(5)));
-        REQUIRE(mutable_max->second == veb->get(Bits<8>(200)));
+        REQUIRE(mutable_min->second == &veb->at(Bits<8>(5)));
+        REQUIRE(mutable_max->second == &veb->at(Bits<8>(200)));
 
         // structure is unchanged
         REQUIRE(val(veb->min_key()) == Opt{5});
@@ -750,37 +721,38 @@ TEST_CASE("get returns a pointer to the stored value", "[veb][get]")
         veb->insert(5, 50);
         veb->insert(9, 90);
         veb->insert(9, 91);
-        REQUIRE(*veb->get(Bits<8>(9)) == 91);
+        REQUIRE(veb->at(Bits<8>(9)) == 91);
         veb->insert(5, 52);
-        REQUIRE(*veb->get(Bits<8>(5)) == 52);
+        REQUIRE(veb->at(Bits<8>(5)) == 52);
     }
 
-    SECTION("get is nullptr again after remove")
+    SECTION("get is nullptr again after erase")
     {
         veb->insert(5, 50);
         veb->insert(9, 90);
         veb->insert(200, 2000);
 
-        REQUIRE(veb->remove(Bits<8>(9)));
-        REQUIRE(veb->get(Bits<8>(9)) == nullptr);
-        REQUIRE(veb->remove(Bits<8>(5)));
-        REQUIRE(veb->get(Bits<8>(5)) == nullptr);
-        REQUIRE(veb->get(Bits<8>(200)) != nullptr);
-        REQUIRE(*veb->get(Bits<8>(200)) == 2000);
-        REQUIRE(veb->remove(Bits<8>(200)));
-        REQUIRE(veb->get(Bits<8>(200)) == nullptr);
+        REQUIRE(veb->erase(Bits<8>(9)));
+        REQUIRE_THROWS(veb->at(Bits<8>(9)));
+        REQUIRE(veb->erase(Bits<8>(5)));
+        REQUIRE_THROWS(veb->at(Bits<8>(5)));
+        REQUIRE(veb->at(Bits<8>(200)) == 2000);
+        REQUIRE(veb->erase(Bits<8>(200)));
+        REQUIRE_THROWS(veb->at(Bits<8>(200)));
     }
 
-    SECTION("get is consistent with member")
+    SECTION("get is consistent with count")
     {
         for (u64 k : {u64{0}, u64{1}, u64{15}, u64{16}, u64{128}, u64{255}})
             veb->insert(Bits<8>(k), static_cast<int>(k));
         for (u64 k = 0; k < 256; k += 5) {
             bool present =
                 k == 0 || k == 1 || k == 15 || k == 16 || k == 128 || k == 255;
-            REQUIRE((veb->get(Bits<8>(k)) != nullptr) ==
-                    veb->member(Bits<8>(k)));
-            REQUIRE(veb->member(Bits<8>(k)) == present);
+            if (veb->count(Bits<8>(k)))
+                REQUIRE_NOTHROW(veb->at(Bits<8>(k)));
+            else
+                REQUIRE_THROWS(veb->at(Bits<8>(k)));
+            REQUIRE(veb->count(Bits<8>(k)) == present);
         }
     }
 }
@@ -892,7 +864,7 @@ TEST_CASE("inserting an existing key updates its value", "[veb][upsert]")
         h.check_all();
     }
 
-    SECTION("update then remove")
+    SECTION("update then erase")
     {
         h.put_all({1, 2, 3});
         h.put(2, 77);
@@ -903,7 +875,7 @@ TEST_CASE("inserting an existing key updates its value", "[veb][upsert]")
         h.check_all();
     }
 
-    SECTION("update the lone element, then remove it")
+    SECTION("update the lone element, then erase it")
     {
         h.put(42, 1);
         h.put(42, 2);
@@ -915,7 +887,7 @@ TEST_CASE("inserting an existing key updates its value", "[veb][upsert]")
         h.check_all();
     }
 
-    SECTION("remove then reinsert gives the new value")
+    SECTION("erase then reinsert gives the new value")
     {
         h.put(50, 1);
         h.put(60, 2);
@@ -993,7 +965,7 @@ TEST_CASE("minimum and maximum track inserts", "[veb][min][max]")
     h.check_all();
 }
 
-TEST_CASE("minimum and maximum track removals", "[veb][min][max][remove]")
+TEST_CASE("minimum and maximum track removals", "[veb][min][max][erase]")
 {
     H<8> h;
     h.put_all({0, 10, 20, 30, 200, 255});
@@ -1015,7 +987,7 @@ TEST_CASE("minimum and maximum track removals", "[veb][min][max][remove]")
 }
 
 TEST_CASE("failed removals do not move minimum or maximum",
-          "[veb][min][max][remove]")
+          "[veb][min][max][erase]")
 {
     H<8> h;
     h.put_all({10, 100, 200});
@@ -1039,7 +1011,7 @@ TEST_CASE("successor on a sparse Veb<8>", "[veb][successor]")
     H<8> h;
     h.put_all({5, 17, 18, 64, 200});
 
-    SECTION("query is a member")
+    SECTION("query is a count")
     {
         REQUIRE(h.succ(5) == Opt{17});
         REQUIRE(h.succ(17) == Opt{18});
@@ -1048,7 +1020,7 @@ TEST_CASE("successor on a sparse Veb<8>", "[veb][successor]")
         REQUIRE(!h.succ(200).has_value());
     }
 
-    SECTION("query is not a member")
+    SECTION("query is not a count")
     {
         REQUIRE(h.succ(0) == Opt{5});
         REQUIRE(h.succ(4) == Opt{5});
@@ -1085,7 +1057,7 @@ TEST_CASE("predecessor on a sparse Veb<8>", "[veb][predecessor]")
     H<8> h;
     h.put_all({5, 17, 18, 64, 200});
 
-    SECTION("query is a member")
+    SECTION("query is a count")
     {
         REQUIRE(!h.pred(5).has_value());
         REQUIRE(h.pred(17) == Opt{5});
@@ -1094,7 +1066,7 @@ TEST_CASE("predecessor on a sparse Veb<8>", "[veb][predecessor]")
         REQUIRE(h.pred(200) == Opt{64});
     }
 
-    SECTION("query is not a member")
+    SECTION("query is not a count")
     {
         REQUIRE(!h.pred(0).has_value());
         REQUIRE(!h.pred(4).has_value());
@@ -1195,10 +1167,10 @@ TEST_CASE("predecessor walk enumerates all elements in reverse order",
 }
 
 // ---------------------------------------------------------------------------
-// remove (returns true iff the key existed and was removed)
+// erase (returns true iff the key existed and was erased)
 // ---------------------------------------------------------------------------
 
-TEST_CASE("remove returns true for existing keys", "[veb][remove]")
+TEST_CASE("erase returns true for existing keys", "[veb][erase]")
 {
     H<8> h;
     h.put_all({1, 50, 100, 255});
@@ -1211,7 +1183,7 @@ TEST_CASE("remove returns true for existing keys", "[veb][remove]")
     REQUIRE(!h.max().has_value());
 }
 
-TEST_CASE("remove returns false for absent keys", "[veb][remove]")
+TEST_CASE("erase returns false for absent keys", "[veb][erase]")
 {
     H<8> h;
 
@@ -1292,7 +1264,7 @@ TEST_CASE("remove returns false for absent keys", "[veb][remove]")
     }
 }
 
-TEST_CASE("remove the only element", "[veb][remove]")
+TEST_CASE("erase the only element", "[veb][erase]")
 {
     H<8> h;
     h.put(77);
@@ -1307,11 +1279,11 @@ TEST_CASE("remove the only element", "[veb][remove]")
     REQUIRE(!h.erase(77));
 }
 
-TEST_CASE("remove from a two element tree", "[veb][remove]")
+TEST_CASE("erase from a two element tree", "[veb][erase]")
 {
     H<8> h;
 
-    SECTION("remove the min")
+    SECTION("erase the min")
     {
         h.put(10, 1);
         h.put(20, 2);
@@ -1327,7 +1299,7 @@ TEST_CASE("remove from a two element tree", "[veb][remove]")
         h.check_all();
     }
 
-    SECTION("remove the max")
+    SECTION("erase the max")
     {
         h.put(10, 1);
         h.put(20, 2);
@@ -1343,7 +1315,7 @@ TEST_CASE("remove from a two element tree", "[veb][remove]")
         h.check_all();
     }
 
-    SECTION("same cluster, remove the min")
+    SECTION("same cluster, erase the min")
     {
         h.put(0x21, 1);
         h.put(0x2E, 2);
@@ -1359,7 +1331,7 @@ TEST_CASE("remove from a two element tree", "[veb][remove]")
         h.check_all();
     }
 
-    SECTION("same cluster, remove the max")
+    SECTION("same cluster, erase the max")
     {
         h.put(0x21, 1);
         h.put(0x2E, 2);
@@ -1376,13 +1348,13 @@ TEST_CASE("remove from a two element tree", "[veb][remove]")
     }
 }
 
-TEST_CASE("remove min, max and middle elements of Veb<8>", "[veb][remove]")
+TEST_CASE("erase min, max and middle elements of Veb<8>", "[veb][erase]")
 {
     const std::vector<u64> keys = {1, 2, 17, 18, 33, 100, 101, 200, 254};
     H<8> h;
     h.put_all(keys);
 
-    SECTION("remove the minimum repeatedly")
+    SECTION("erase the minimum repeatedly")
     {
         while (!h.model.empty()) {
             u64 m = h.model.begin()->first;
@@ -1391,7 +1363,7 @@ TEST_CASE("remove min, max and middle elements of Veb<8>", "[veb][remove]")
         }
     }
 
-    SECTION("remove the maximum repeatedly")
+    SECTION("erase the maximum repeatedly")
     {
         while (!h.model.empty()) {
             u64 m = h.model.rbegin()->first;
@@ -1400,7 +1372,7 @@ TEST_CASE("remove min, max and middle elements of Veb<8>", "[veb][remove]")
         }
     }
 
-    SECTION("remove middle elements, keeping min and max")
+    SECTION("erase middle elements, keeping min and max")
     {
         for (u64 x : {u64{33}, u64{18}, u64{100}, u64{2}, u64{200}}) {
             REQUIRE(h.erase(x));
@@ -1434,7 +1406,7 @@ TEST_CASE("remove min, max and middle elements of Veb<8>", "[veb][remove]")
     }
 }
 
-TEST_CASE("remove keeps values of the remaining keys", "[veb][remove]")
+TEST_CASE("erase keeps values of the remaining keys", "[veb][erase]")
 {
     H<8> h;
     for (u64 x = 0; x < 256; x += 21)
@@ -1452,7 +1424,7 @@ TEST_CASE("remove keeps values of the remaining keys", "[veb][remove]")
     h.check_all();
 }
 
-TEST_CASE("remove empties a cluster", "[veb][remove]")
+TEST_CASE("erase empties a cluster", "[veb][erase]")
 {
     H<8> h;
     h.put_all({0x05, 0x30, 0x50, 0x51, 0x5F, 0xF0});
@@ -1470,8 +1442,8 @@ TEST_CASE("remove empties a cluster", "[veb][remove]")
     REQUIRE(h.pred(0xF0) == Opt{0x05});
 }
 
-TEST_CASE("remove updates max when max cluster becomes empty",
-          "[veb][remove][max]")
+TEST_CASE("erase updates max when max cluster becomes empty",
+          "[veb][erase][max]")
 {
     H<8> h;
     h.put_all({0x01, 0x40, 0x80, 0xC0});
@@ -1486,8 +1458,8 @@ TEST_CASE("remove updates max when max cluster becomes empty",
     h.check_all();
 }
 
-TEST_CASE("remove updates min when min cluster becomes empty",
-          "[veb][remove][min]")
+TEST_CASE("erase updates min when min cluster becomes empty",
+          "[veb][erase][min]")
 {
     H<8> h;
     h.put_all({0x01, 0x40, 0x80, 0xC0});
@@ -1502,7 +1474,7 @@ TEST_CASE("remove updates min when min cluster becomes empty",
     h.check_all();
 }
 
-TEST_CASE("reinsert after remove", "[veb][remove][insert]")
+TEST_CASE("reinsert after erase", "[veb][erase][insert]")
 {
     H<8> h;
     h.put_all({10, 20, 30});
@@ -1524,7 +1496,7 @@ TEST_CASE("reinsert after remove", "[veb][remove][insert]")
     REQUIRE(h.max() == Opt{30});
 }
 
-TEST_CASE("reuse after emptying", "[veb][remove][insert]")
+TEST_CASE("reuse after emptying", "[veb][erase][insert]")
 {
     H<8> h;
     h.put_all({1, 2, 3, 100, 200});
@@ -1559,7 +1531,7 @@ TEST_CASE("veb with a non-trivial value type", "[veb][string]")
     REQUIRE(lookup(*veb, 3) == OptStr{"three"});
     REQUIRE(lookup(*veb, 200) == OptStr{"two hundred"});
     REQUIRE(lookup(*veb, 77) == OptStr{"seventy-seven"});
-    REQUIRE(veb->get(Bits<8>(4)) == nullptr);
+    REQUIRE_THROWS(veb->at(Bits<8>(4)));
 
     // update
     veb->insert(3, "THREE");
@@ -1568,12 +1540,11 @@ TEST_CASE("veb with a non-trivial value type", "[veb][string]")
 
     // an empty string is still a present value
     veb->insert(77, "");
-    REQUIRE(veb->member(77));
-    REQUIRE(veb->get(Bits<8>(77)) != nullptr);
-    REQUIRE(*veb->get(Bits<8>(77)) == "");
+    REQUIRE(veb->count(77));
+    REQUIRE(veb->at(Bits<8>(77)) == "");
 
     // modify through the pointer
-    veb->get(Bits<8>(200))->append("!");
+    veb->at(Bits<8>(200)).append("!");
     REQUIRE(lookup(*veb, 200) == OptStr{"two hundred!"});
 
     // entries
@@ -1587,14 +1558,14 @@ TEST_CASE("veb with a non-trivial value type", "[veb][string]")
     REQUIRE(val(veb->successor(Bits<8>(77))) == Opt{200});
 
     // removal
-    REQUIRE(veb->remove(Bits<8>(77)));
-    REQUIRE(!veb->remove(Bits<8>(77)));
-    REQUIRE(!veb->member(77));
-    REQUIRE(veb->get(Bits<8>(77)) == nullptr);
+    REQUIRE(veb->erase(Bits<8>(77)));
+    REQUIRE(!veb->erase(Bits<8>(77)));
+    REQUIRE(!veb->count(77));
+    REQUIRE_THROWS(veb->at(Bits<8>(77)));
     REQUIRE(val(veb->successor(Bits<8>(3))) == Opt{200});
 
-    REQUIRE(veb->remove(Bits<8>(3)));
-    REQUIRE(veb->remove(Bits<8>(200)));
+    REQUIRE(veb->erase(Bits<8>(3)));
+    REQUIRE(veb->erase(Bits<8>(200)));
     REQUIRE(!veb->min_key().has_value());
     REQUIRE(!veb->max_key().has_value());
 }
@@ -1603,7 +1574,7 @@ TEST_CASE("veb with a non-trivial value type", "[veb][string]")
 // Small randomized differential test against std::map
 // ---------------------------------------------------------------------------
 
-TEMPLATE_TEST_CASE_SIG("short random upsert/remove sequence vs std::map",
+TEMPLATE_TEST_CASE_SIG("short random upsert/erase sequence vs std::map",
                        "[veb][random]", ((std::size_t W), W), 4, 8)
 {
     std::mt19937 rng(0xC0FFEE);
@@ -1616,7 +1587,7 @@ TEMPLATE_TEST_CASE_SIG("short random upsert/remove sequence vs std::map",
         u64 k = key_dist(rng);
         CAPTURE(i, k);
 
-        // ~55% upsert (insert new or update existing), ~45% remove
+        // ~55% upsert (insert new or update existing), ~45% erase
         // (existing or absent)
         if (coin(rng) < 55)
             h.put(k);

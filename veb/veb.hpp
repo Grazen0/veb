@@ -8,6 +8,8 @@
 #include <cstdlib>
 #include <memory>
 #include <optional>
+#include <stdexcept>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <variant>
@@ -56,6 +58,11 @@ private:
 public:
     Veb() = default;
 
+    [[nodiscard]] constexpr bool empty() const
+    {
+        return !m_min.has_value();
+    }
+
     [[nodiscard]] constexpr std::optional<Key> min_key() const
     {
         if (!m_min)
@@ -89,57 +96,68 @@ public:
     {
         if (!m_max)
             return std::nullopt;
-        return std::make_pair(*m_max, get(*m_max));
+        return std::make_pair(*m_max, &at(*m_max));
     }
 
     [[nodiscard]] constexpr std::optional<EntryRef> maximum()
     {
         if (!m_max)
             return std::nullopt;
-        return std::make_pair(*m_max, get(*m_max));
+        return std::make_pair(*m_max, &at(*m_max));
     }
 
-    [[nodiscard]] const V* get(const Key& k) const
+    [[nodiscard]] V& operator[](const Key& k)
+        requires(std::is_default_constructible_v<V>)
+    {
+        if (!count(k))
+            insert(k, V{});
+
+        return at(k);
+    }
+
+    [[nodiscard]] const V& at(const Key& k) const
     {
         if (!m_min)
-            return nullptr;
+            throw std::out_of_range("veb key out of range");
 
         if (k == m_min->first)
-            return &m_min->second;
+            return m_min->second;
 
         auto [hi, lo] = split(k);
         if (!m_clusters.count(hi))
-            return nullptr;
+            throw std::out_of_range("veb key out of range");
 
-        return m_clusters.at(hi).get(lo);
+        return m_clusters.at(hi).at(lo);
     }
 
-    [[nodiscard]] V* get(const Key& k)
+    [[nodiscard]] V& at(const Key& k)
     {
         if (!m_min)
-            return nullptr;
+            throw std::out_of_range("veb key out of range");
 
         if (k == m_min->first)
-            return &m_min->second;
+            return m_min->second;
 
         auto [hi, lo] = split(k);
         if (!m_clusters.count(hi))
-            return nullptr;
+            throw std::out_of_range("veb key out of range");
 
-        return m_clusters.at(hi).get(lo);
+        return m_clusters.at(hi).at(lo);
     }
 
-    [[nodiscard]] bool member(const Key& k) const
+    [[nodiscard]] std::size_t count(const Key& k) const
     {
         if (!m_min)
-            return false;
+            return 0;
 
         if (k == m_min->first || k == m_max)
-            return true;
+            return 1;
 
         auto [hi, lo] = split(k);
+        if (!m_clusters.count(hi))
+            return 0;
 
-        return m_clusters.count(hi) && m_clusters.at(hi).member(lo);
+        return m_clusters.at(hi).count(lo);
     }
 
     [[nodiscard]] std::optional<Key> successor(const Key& k) const
@@ -235,7 +253,7 @@ public:
             m_max = k;
     }
 
-    bool remove(Key k)
+    bool erase(Key k)
     {
         if (!m_min)
             return false;
@@ -249,7 +267,7 @@ public:
             return true;
         }
 
-        bool should_remove = false;
+        bool should_erase = false;
 
         if (k == m_min->first) {
             assert(m_summary);
@@ -262,7 +280,7 @@ public:
 
             k = join(*first_cluster_idx, replacement->first);
             m_min = std::make_pair(k, std::move(*replacement->second));
-            should_remove = true;
+            should_erase = true;
         }
 
         auto [hi, lo] = split(k);
@@ -270,16 +288,16 @@ public:
             return false;
 
         auto& hi_cluster = m_clusters.at(hi);
-        bool removed = hi_cluster.remove(lo);
+        bool erased = hi_cluster.erase(lo);
 
-        if (should_remove)
-            assert(removed);
-        else if (!removed)
+        if (should_erase)
+            assert(erased);
+        else if (!erased)
             return false;
 
         if (!hi_cluster.min_key()) {
             assert(m_summary);
-            m_summary->remove(hi);
+            m_summary->erase(hi);
 
             if (k == m_max) {
                 auto summary_max = m_summary->max_key();
@@ -310,6 +328,11 @@ private:
 
 public:
     Veb() = default;
+
+    [[nodiscard]] constexpr bool empty() const
+    {
+        return !m_vals[0] && !m_vals[1];
+    }
 
     [[nodiscard]] constexpr std::optional<Key> min_key() const
     {
@@ -361,25 +384,25 @@ public:
         return std::make_pair(*k, &*m_vals[k->to_ullong()]);
     }
 
-    [[nodiscard]] constexpr bool member(const Key& k) const
+    [[nodiscard]] constexpr std::size_t count(const Key& k) const
     {
         return m_vals[k.to_ullong()].has_value();
     }
 
-    [[nodiscard]] constexpr V* get(const Key& k)
+    [[nodiscard]] constexpr V& at(const Key& k)
     {
         auto& val = m_vals[k.to_ullong()];
         if (!val)
-            return nullptr;
-        return &*val;
+            throw std::out_of_range("veb key out of range");
+        return *val;
     }
 
-    [[nodiscard]] constexpr const V* get(const Key& k) const
+    [[nodiscard]] constexpr const V& at(const Key& k) const
     {
         auto& val = m_vals[k.to_ullong()];
         if (!val)
-            return nullptr;
-        return &*val;
+            throw std::out_of_range("veb key out of range");
+        return *val;
     }
 
     [[nodiscard]] std::optional<Key> successor(const Key& k) const
@@ -403,7 +426,7 @@ public:
         m_vals[k.to_ullong()] = std::move(val);
     }
 
-    constexpr bool remove(const Key& k)
+    constexpr bool erase(const Key& k)
     {
         bool res = m_vals[k.to_ullong()].has_value();
         m_vals[k.to_ullong()].reset();
