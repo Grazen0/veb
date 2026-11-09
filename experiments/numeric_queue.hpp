@@ -11,6 +11,14 @@
 #include <veb.hpp>
 #include <vector>
 
+template<std::size_t W>
+    requires(W <= 64)
+using LeastUint = std::conditional_t<
+    W <= 8, std::uint8_t,
+    std::conditional_t<
+        W <= 16, std::uint16_t,
+        std::conditional_t<W <= 32, std::uint32_t, std::uint64_t>>>;
+
 template<typename Q>
 concept numeric_queue =
     requires(Q q, const Q& cq, const std::bitset<Q::key_width>& key,
@@ -66,13 +74,7 @@ template<std::size_t W, typename T>
     requires(std::movable<T> && W <= 64)
 class PriorityQueueQueue {
 private:
-    using KeyInt = std::conditional_t<
-        W <= 8, std::uint8_t,
-        std::conditional_t<
-            W <= 16, std::uint16_t,
-            std::conditional_t<W <= 32, std::uint32_t, std::uint64_t>>>;
-
-    using Entry = std::pair<KeyInt, T>;
+    using Entry = std::pair<LeastUint<W>, T>;
     std::priority_queue<Entry, std::vector<Entry>, std::greater<>> pq;
 
 public:
