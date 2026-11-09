@@ -10,6 +10,9 @@
 #include <utility>
 #include <variant>
 
+// required for to_ullong() not to explode
+static constexpr std::size_t MAX_W = 64;
+
 namespace
 {
     constexpr bool is_pow2(auto n)
@@ -17,42 +20,28 @@ namespace
         return n != 0 && (n & (n - 1)) == 0;
     }
 
-    // PERF: probably needs optimization
     template<std::size_t W>
-        requires(W % 2 == 0)
+        requires(W <= MAX_W && W % 2 == 0)
     constexpr std::pair<std::bitset<W / 2>, std::bitset<W / 2>>
     split(const std::bitset<W>& n)
     {
-        std::bitset<W / 2> hi;
-        std::bitset<W / 2> lo;
-
-        for (std::size_t i = 0; i < W / 2; ++i)
-            lo[i] = n[i];
-
-        for (std::size_t i = 0; i < W / 2; ++i)
-            hi[i] = n[(W / 2) + i];
-
+        constexpr std::size_t H = W / 2;
+        std::bitset<H> lo{n.to_ullong()};
+        std::bitset<H> hi{n.to_ullong() >> H};
         return {hi, lo};
     }
 
     template<std::size_t W>
+        requires(2 * W <= MAX_W)
     constexpr std::bitset<2 * W> join(const std::bitset<W>& hi,
                                       const std::bitset<W>& lo)
     {
-        std::bitset<2 * W> out;
-
-        for (std::size_t i = 0; i < W; ++i)
-            out[i] = lo[i];
-
-        for (std::size_t i = 0; i < W; ++i)
-            out[W + i] = hi[i];
-
-        return out;
+        return std::bitset<2 * W>{lo.to_ullong() | (hi.to_ullong() << W)};
     }
 } // namespace
 
 template<std::size_t W, typename V>
-    requires(is_pow2(W))
+    requires(W <= MAX_W && is_pow2(W))
 class Veb {
 private:
     using Key = std::bitset<W>;
