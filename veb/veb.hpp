@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdlib>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -47,8 +48,8 @@ private:
 
     using Key = std::bitset<W>;
     using Entry = std::pair<Key, V>;
-    using EntryRef = std::pair<Key, V*>;
-    using EntryRefConst = std::pair<Key, const V*>;
+    using EntryRef = std::pair<Key, V&>;
+    using EntryRefConst = std::pair<Key, const V&>;
 
     std::unique_ptr<Veb<H, std::monostate>> m_summary{};
     std::unordered_map<std::bitset<H>, Veb<L, V>> m_clusters{};
@@ -71,12 +72,13 @@ public:
         return m_min->first;
     }
 
-    [[nodiscard]] constexpr std::optional<EntryRefConst> minimum() const
+    [[nodiscard]] constexpr std::optional<EntryRefConst> cminimum() const
     {
         if (!m_min)
             return std::nullopt;
 
-        return std::make_pair(m_min->first, &m_min->second);
+        return std::make_pair(m_min->first,
+                              std::reference_wrapper{m_min->second});
     }
 
     [[nodiscard]] constexpr std::optional<EntryRef> minimum()
@@ -84,7 +86,8 @@ public:
         if (!m_min)
             return std::nullopt;
 
-        return std::make_pair(m_min->first, &m_min->second);
+        return std::make_pair(m_min->first,
+                              std::reference_wrapper{m_min->second});
     }
 
     [[nodiscard]] constexpr std::optional<Key> max_key() const
@@ -92,18 +95,18 @@ public:
         return m_max;
     }
 
-    [[nodiscard]] constexpr std::optional<EntryRefConst> maximum() const
+    [[nodiscard]] constexpr std::optional<EntryRefConst> cmaximum() const
     {
         if (!m_max)
             return std::nullopt;
-        return std::make_pair(*m_max, &at(*m_max));
+        return std::make_pair(*m_max, std::reference_wrapper{at(*m_max)});
     }
 
     [[nodiscard]] constexpr std::optional<EntryRef> maximum()
     {
         if (!m_max)
             return std::nullopt;
-        return std::make_pair(*m_max, &at(*m_max));
+        return std::make_pair(*m_max, std::reference_wrapper{at(*m_max)});
     }
 
     [[nodiscard]] V& operator[](const Key& k)
@@ -279,7 +282,7 @@ public:
             assert(replacement);
 
             k = join(*first_cluster_idx, replacement->first);
-            m_min = std::make_pair(k, std::move(*replacement->second));
+            m_min = std::make_pair(k, std::move(replacement->second));
             should_erase = true;
         }
 
@@ -321,8 +324,8 @@ class Veb<1, V> {
 private:
     using Key = std::bitset<1>;
     using Entry = std::pair<Key, V>;
-    using EntryRef = std::pair<Key, V*>;
-    using EntryRefConst = std::pair<Key, const V*>;
+    using EntryRef = std::pair<Key, V&>;
+    using EntryRefConst = std::pair<Key, const V&>;
 
     std::array<std::optional<V>, 2> m_vals{};
 
@@ -343,12 +346,13 @@ public:
         return std::nullopt;
     }
 
-    [[nodiscard]] constexpr std::optional<EntryRefConst> minimum() const
+    [[nodiscard]] constexpr std::optional<EntryRefConst> cminimum() const
     {
         auto k = min_key();
         if (!k)
             return std::nullopt;
-        return std::make_pair(*k, &*m_vals[k->to_ullong()]);
+        return std::make_pair(*k,
+                              std::reference_wrapper{*m_vals[k->to_ullong()]});
     }
 
     [[nodiscard]] constexpr std::optional<EntryRef> minimum()
@@ -356,7 +360,8 @@ public:
         auto k = min_key();
         if (!k)
             return std::nullopt;
-        return std::make_pair(*k, &*m_vals[k->to_ullong()]);
+        return std::make_pair(*k,
+                              std::reference_wrapper{*m_vals[k->to_ullong()]});
     }
 
     [[nodiscard]] constexpr std::optional<Key> max_key() const
@@ -368,12 +373,13 @@ public:
         return std::nullopt;
     }
 
-    [[nodiscard]] constexpr std::optional<EntryRefConst> maximum() const
+    [[nodiscard]] constexpr std::optional<EntryRefConst> cmaximum() const
     {
         auto k = max_key();
         if (!k)
             return std::nullopt;
-        return std::make_pair(*k, &*m_vals[k->to_ullong()]);
+        return std::make_pair(*k,
+                              std::reference_wrapper{*m_vals[k->to_ullong()]});
     }
 
     [[nodiscard]] constexpr std::optional<EntryRef> maximum()
@@ -381,7 +387,8 @@ public:
         auto k = max_key();
         if (!k)
             return std::nullopt;
-        return std::make_pair(*k, &*m_vals[k->to_ullong()]);
+        return std::make_pair(*k,
+                              std::reference_wrapper{*m_vals[k->to_ullong()]});
     }
 
     [[nodiscard]] constexpr std::size_t count(const Key& k) const

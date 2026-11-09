@@ -50,12 +50,12 @@ public:
         assert(!veb.empty());
 
         auto [k, vs] = *veb.minimum();
-        assert(!vs->empty());
+        assert(!vs.empty());
 
-        T val = std::move(vs->back());
-        vs->pop_back();
+        T val = std::move(vs.back());
+        vs.pop_back();
 
-        if (vs->empty())
+        if (vs.empty())
             veb.erase(k);
 
         return std::make_pair(k, std::move(val));

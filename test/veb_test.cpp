@@ -51,13 +51,13 @@ namespace
     }
 
     template<std::size_t W, typename V>
-    EntryU entry(const std::optional<std::pair<std::bitset<W>, V*>>& e)
+    EntryU entry(const std::optional<std::pair<std::bitset<W>, V&>>& e)
     {
         if (!e)
             return std::nullopt;
         if (!e->second)
             return std::nullopt;
-        return std::pair<u64, int>{e->first.to_ullong(), *e->second};
+        return std::pair<u64, int>{e->first.to_ullong(), e->second};
     }
 
     // ---- reference queries on top of std::map ----------------------------
@@ -160,12 +160,12 @@ namespace
             os << "max_key got " << fmt(mx) << " expected " << fmt(ref_max(m))
                << "; ";
 
-        auto mne = entry<W>(veb.minimum());
+        auto mne = entry<W>(veb.cminimum());
         if (mne != ref_min_entry(m))
             os << "minimum got " << fmt(mne) << " expected "
                << fmt(ref_min_entry(m)) << "; ";
 
-        auto mxe = entry<W>(veb.maximum());
+        auto mxe = entry<W>(veb.cmaximum());
         if (mxe != ref_max_entry(m))
             os << "maximum got " << fmt(mxe) << " expected "
                << fmt(ref_max_entry(m)) << "; ";
@@ -672,17 +672,17 @@ TEST_CASE("get returns a pointer to the stored value", "[veb][get]")
         REQUIRE(p == 90);
         REQUIRE_THROWS(cv.at(Bits<8>(10)));
 
-        auto mn = cv.minimum();
-        auto mx = cv.maximum();
+        auto mn = cv.cminimum();
+        auto mx = cv.cmaximum();
         REQUIRE(mn.has_value());
         REQUIRE(mx.has_value());
         REQUIRE(mn->first == Bits<8>(5));
         REQUIRE(mx->first == Bits<8>(9));
-        REQUIRE(*mn->second == 50);
-        REQUIRE(*mx->second == 90);
+        REQUIRE(mn->second == 50);
+        REQUIRE(mx->second == 90);
 
-        static_assert(std::is_same_v<decltype(mn->second), const int*>);
-        static_assert(std::is_same_v<decltype(mx->second), const int*>);
+        static_assert(std::is_same_v<decltype(mn->second), const int&>);
+        static_assert(std::is_same_v<decltype(mx->second), const int&>);
     }
 
     SECTION("writing through the mutable pointer changes the stored value")
@@ -696,18 +696,18 @@ TEST_CASE("get returns a pointer to the stored value", "[veb][get]")
 
         veb->at(Bits<8>(5)) = 51;
         REQUIRE(lookup(*veb, 5) == OptInt{51});
-        REQUIRE(*veb->minimum()->second == 51);
+        REQUIRE(veb->minimum()->second == 51);
 
         veb->at(Bits<8>(200)) = 2001;
         REQUIRE(lookup(*veb, 200) == OptInt{2001});
-        REQUIRE(*veb->maximum()->second == 2001);
+        REQUIRE(veb->maximum()->second == 2001);
 
         auto mutable_min = veb->minimum();
         auto mutable_max = veb->maximum();
-        static_assert(std::is_same_v<decltype(mutable_min->second), int*>);
-        static_assert(std::is_same_v<decltype(mutable_max->second), int*>);
-        REQUIRE(mutable_min->second == &veb->at(Bits<8>(5)));
-        REQUIRE(mutable_max->second == &veb->at(Bits<8>(200)));
+        static_assert(std::is_same_v<decltype(mutable_min->second), int&>);
+        static_assert(std::is_same_v<decltype(mutable_max->second), int&>);
+        REQUIRE(mutable_min->second == veb->at(Bits<8>(5)));
+        REQUIRE(mutable_max->second == veb->at(Bits<8>(200)));
 
         // structure is unchanged
         REQUIRE(val(veb->min_key()) == Opt{5});
@@ -1549,9 +1549,9 @@ TEST_CASE("veb with a non-trivial value type", "[veb][string]")
 
     // entries
     REQUIRE(veb->minimum()->first.to_ullong() == 3);
-    REQUIRE(*veb->minimum()->second == "THREE");
+    REQUIRE(veb->minimum()->second == "THREE");
     REQUIRE(veb->maximum()->first.to_ullong() == 200);
-    REQUIRE(*veb->maximum()->second == "two hundred!");
+    REQUIRE(veb->maximum()->second == "two hundred!");
 
     // structure unaffected by updates
     REQUIRE(val(veb->successor(Bits<8>(3))) == Opt{77});
