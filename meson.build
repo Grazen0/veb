@@ -58,3 +58,20 @@ test_exe = executable(
 )
 test('eda_structs', test_exe)
 
+experiment_dependencies = [
+  veb_dep,
+]
+
+dijkstra_exe = executable(
+  'dijkstra',
+  'experiments/dijkstra.cpp',
+  dependencies : dependencies + experiment_dependencies,
+  link_with : lib,
+)
+
+prim_exe = executable(
+  'prim',
+  'experiments/prim.cpp',
+  dependencies : dependencies + experiment_dependencies,
+  link_with : lib,
+)
