@@ -13,35 +13,33 @@
 // required for to_ullong() not to explode
 static constexpr std::size_t MAX_W = 64;
 
-namespace
+// TODO: refactor with modules or something
+static constexpr bool is_pow2(auto n)
 {
-    constexpr bool is_pow2(auto n)
-    {
-        return n != 0 && (n & (n - 1)) == 0;
-    }
+    return n != 0 && (n & (n - 1)) == 0;
+}
 
-    template<std::size_t W>
-        requires(W <= MAX_W && W % 2 == 0)
-    constexpr std::pair<std::bitset<W / 2>, std::bitset<W / 2>>
-    split(const std::bitset<W>& n)
-    {
-        constexpr std::size_t H = W / 2;
-        std::bitset<H> lo{n.to_ullong()};
-        std::bitset<H> hi{n.to_ullong() >> H};
-        return {hi, lo};
-    }
+template<std::size_t W>
+    requires(W <= MAX_W && W % 2 == 0)
+static constexpr std::pair<std::bitset<W / 2>, std::bitset<W / 2>>
+split(const std::bitset<W>& n)
+{
+    constexpr std::size_t H = W / 2;
+    std::bitset<H> lo{n.to_ullong()};
+    std::bitset<H> hi{n.to_ullong() >> H};
+    return {hi, lo};
+}
 
-    template<std::size_t W>
-        requires(2 * W <= MAX_W)
-    constexpr std::bitset<2 * W> join(const std::bitset<W>& hi,
-                                      const std::bitset<W>& lo)
-    {
-        return std::bitset<2 * W>{lo.to_ullong() | (hi.to_ullong() << W)};
-    }
-} // namespace
+template<std::size_t W>
+    requires(2 * W <= MAX_W)
+static constexpr std::bitset<2 * W> join(const std::bitset<W>& hi,
+                                         const std::bitset<W>& lo)
+{
+    return std::bitset<2 * W>{lo.to_ullong() | (hi.to_ullong() << W)};
+}
 
 template<std::size_t W, typename V>
-    requires(W <= MAX_W && is_pow2(W))
+    requires(1 <= W && W <= MAX_W && is_pow2(W))
 class Veb {
 private:
     using Key = std::bitset<W>;
