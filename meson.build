@@ -75,3 +75,10 @@ prim_exe = executable(
   dependencies : dependencies + experiment_dependencies,
   link_with : lib,
 )
+
+huffman_exe = executable(
+  'huffman',
+  'experiments/huffman.cpp',
+  dependencies : dependencies + experiment_dependencies,
+  link_with : lib,
+)
