@@ -15,6 +15,7 @@ Checks: >
   -google-readability-braces-around-statements,
   -google-readability-todo,
   misc-*,
+  -misc-no-recursion,
   -misc-non-private-member-variables-in-classes,
   -misc-static-assert,
   modernize-*,
