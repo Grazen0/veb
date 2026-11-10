@@ -15,32 +15,8 @@
 #include <utility>
 #include <variant>
 
-// required for to_ullong() not to explode
-static constexpr std::size_t MAX_W = 64;
-
-// TODO: refactor with modules or something
-template<std::size_t W>
-    requires(2 <= W && W <= MAX_W)
-static constexpr std::pair<std::bitset<(W + 1) / 2>, std::bitset<W / 2>>
-split(const std::bitset<W>& n)
-{
-    constexpr std::size_t H = (W + 1) / 2;
-    constexpr std::size_t L = W / 2;
-    std::bitset<H> hi{n.to_ullong() >> L};
-    std::bitset<L> lo{n.to_ullong()};
-    return {hi, lo};
-}
-
-template<std::size_t H, std::size_t L>
-    requires(L >= 1 && L <= H && H <= L + 1)
-static constexpr std::bitset<H + L> join(const std::bitset<H>& hi,
-                                         const std::bitset<L>& lo)
-{
-    return lo.to_ullong() | (hi.to_ullong() << L);
-}
-
 template<std::size_t W, typename V>
-    requires(1 <= W && W <= MAX_W)
+    requires(1 <= W && W <= 64) // required for to_ullong() not to explode
 class Veb {
 private:
     static constexpr std::size_t H = (W + 1) / 2;
@@ -55,6 +31,26 @@ private:
     std::unordered_map<std::bitset<H>, Veb<L, V>> m_clusters{};
     std::optional<Entry> m_min{};
     std::optional<Key> m_max{};
+
+    template<std::size_t W2>
+        requires(2 <= W2)
+    static constexpr std::pair<std::bitset<(W2 + 1) / 2>, std::bitset<W2 / 2>>
+    split(const std::bitset<W2>& n)
+    {
+        constexpr std::size_t H = (W2 + 1) / 2;
+        constexpr std::size_t L = W2 / 2;
+        std::bitset<H> hi{n.to_ullong() >> L};
+        std::bitset<L> lo{n.to_ullong()};
+        return {hi, lo};
+    }
+
+    template<std::size_t H, std::size_t L>
+        requires(L >= 1 && L <= H && H <= L + 1)
+    static constexpr std::bitset<H + L> join(const std::bitset<H>& hi,
+                                             const std::bitset<L>& lo)
+    {
+        return lo.to_ullong() | (hi.to_ullong() << L);
+    }
 
 public:
     Veb() = default;
