@@ -26,13 +26,13 @@ namespace
     }
 
     template<template<std::size_t, typename> typename Queue>
-    using HuffmanQueue = Queue<64, std::unique_ptr<Node>>;
+    using huffman_queue = Queue<64, std::unique_ptr<Node>>;
 
     template<template<std::size_t W, typename T> typename Queue>
-        requires(numeric_queue<HuffmanQueue<Queue>>)
+        requires(numeric_queue<huffman_queue<Queue>>)
     std::uint64_t huffman(const std::vector<std::uint64_t>& freqs)
     {
-        HuffmanQueue<Queue> q;
+        huffman_queue<Queue> q;
 
         for (auto f : freqs)
             q.push(f, std::make_unique<Node>(f));

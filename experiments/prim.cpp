@@ -12,17 +12,17 @@
 namespace
 {
     template<template<std::size_t W, typename T> typename Queue>
-    using PrimQueue = Queue<32, std::size_t>;
+    using prim_queue = Queue<32, std::size_t>;
 
     template<template<std::size_t W, typename T> typename Queue>
-        requires(numeric_queue<PrimQueue<Queue>>)
+        requires(numeric_queue<prim_queue<Queue>>)
     std::optional<std::uint64_t>
     prim(const std::vector<std::vector<std::pair<std::size_t, std::uint32_t>>>&
              adj)
     {
         std::size_t n = adj.size();
         std::vector<bool> vis(n);
-        PrimQueue<Queue> q;
+        prim_queue<Queue> q;
 
         std::uint64_t cost = 0;
         q.push(0, 0);

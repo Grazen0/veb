@@ -22,15 +22,15 @@ private:
     static constexpr std::size_t H = (W + 1) / 2;
     static constexpr std::size_t L = W / 2;
 
-    using Key = std::bitset<W>;
-    using Entry = std::pair<Key, V>;
-    using EntryRef = std::pair<Key, V&>;
-    using EntryRefConst = std::pair<Key, const V&>;
+    using key = std::bitset<W>;
+    using entry = std::pair<key, V>;
+    using entry_ref = std::pair<key, V&>;
+    using entry_ref_const = std::pair<key, const V&>;
 
     std::unique_ptr<Veb<H, std::monostate>> m_summary{};
     std::unordered_map<std::bitset<H>, Veb<L, V>> m_clusters{};
-    std::optional<Entry> m_min{};
-    std::optional<Key> m_max{};
+    std::optional<entry> m_min{};
+    std::optional<key> m_max{};
 
     template<std::size_t W2>
         requires(2 <= W2)
@@ -45,7 +45,7 @@ private:
     }
 
     template<std::size_t H, std::size_t L>
-        requires(L >= 1 && L <= H && H <= L + 1)
+        requires(L >= 1 && L <= H && H <= L + 1 && H + L <= 64)
     static constexpr std::bitset<H + L> join(const std::bitset<H>& hi,
                                              const std::bitset<L>& lo)
     {
@@ -60,7 +60,7 @@ public:
         return !m_min.has_value();
     }
 
-    [[nodiscard]] constexpr std::optional<Key> min_key() const
+    [[nodiscard]] constexpr std::optional<key> min_key() const
     {
         if (!m_min)
             return std::nullopt;
@@ -68,7 +68,7 @@ public:
         return m_min->first;
     }
 
-    [[nodiscard]] constexpr std::optional<EntryRefConst> cminimum() const
+    [[nodiscard]] constexpr std::optional<entry_ref_const> cminimum() const
     {
         if (!m_min)
             return std::nullopt;
@@ -77,7 +77,7 @@ public:
                               std::reference_wrapper{m_min->second});
     }
 
-    [[nodiscard]] constexpr std::optional<EntryRef> minimum()
+    [[nodiscard]] constexpr std::optional<entry_ref> minimum()
     {
         if (!m_min)
             return std::nullopt;
@@ -86,26 +86,26 @@ public:
                               std::reference_wrapper{m_min->second});
     }
 
-    [[nodiscard]] constexpr std::optional<Key> max_key() const
+    [[nodiscard]] constexpr std::optional<key> max_key() const
     {
         return m_max;
     }
 
-    [[nodiscard]] constexpr std::optional<EntryRefConst> cmaximum() const
+    [[nodiscard]] constexpr std::optional<entry_ref_const> cmaximum() const
     {
         if (!m_max)
             return std::nullopt;
         return std::make_pair(*m_max, std::reference_wrapper{at(*m_max)});
     }
 
-    [[nodiscard]] constexpr std::optional<EntryRef> maximum()
+    [[nodiscard]] constexpr std::optional<entry_ref> maximum()
     {
         if (!m_max)
             return std::nullopt;
         return std::make_pair(*m_max, std::reference_wrapper{at(*m_max)});
     }
 
-    [[nodiscard]] V& operator[](const Key& k)
+    [[nodiscard]] V& operator[](const key& k)
         requires(std::is_default_constructible_v<V>)
     {
         if (!count(k))
@@ -114,7 +114,7 @@ public:
         return at(k);
     }
 
-    [[nodiscard]] const V& at(const Key& k) const
+    [[nodiscard]] const V& at(const key& k) const
     {
         if (!m_min)
             throw std::out_of_range("veb key out of range");
@@ -129,7 +129,7 @@ public:
         return m_clusters.at(hi).at(lo);
     }
 
-    [[nodiscard]] V& at(const Key& k)
+    [[nodiscard]] V& at(const key& k)
     {
         if (!m_min)
             throw std::out_of_range("veb key out of range");
@@ -144,7 +144,7 @@ public:
         return m_clusters.at(hi).at(lo);
     }
 
-    [[nodiscard]] std::size_t count(const Key& k) const
+    [[nodiscard]] std::size_t count(const key& k) const
     {
         if (!m_min)
             return 0;
@@ -159,7 +159,7 @@ public:
         return m_clusters.at(hi).count(lo);
     }
 
-    [[nodiscard]] std::optional<Key> successor(const Key& k) const
+    [[nodiscard]] std::optional<key> successor(const key& k) const
     {
         if (m_min && k.to_ullong() < m_min->first.to_ullong())
             return m_min->first;
@@ -186,7 +186,7 @@ public:
         return join(*succ_cluster, *offset);
     }
 
-    [[nodiscard]] std::optional<Key> predecessor(const Key& k) const
+    [[nodiscard]] std::optional<key> predecessor(const key& k) const
     {
         if (m_max && k.to_ullong() > m_max->to_ullong())
             return m_max;
@@ -217,7 +217,7 @@ public:
         return join(*pred_cluster, *offset);
     }
 
-    void insert(Key k, V val)
+    void insert(key k, V val)
     {
         if (!m_min) {
             assert(!m_max);
@@ -252,7 +252,7 @@ public:
             m_max = k;
     }
 
-    bool erase(Key k)
+    bool erase(key k)
     {
         if (!m_min)
             return false;
@@ -318,10 +318,10 @@ public:
 template<typename V>
 class Veb<1, V> {
 private:
-    using Key = std::bitset<1>;
-    using Entry = std::pair<Key, V>;
-    using EntryRef = std::pair<Key, V&>;
-    using EntryRefConst = std::pair<Key, const V&>;
+    using key = std::bitset<1>;
+    using entry = std::pair<key, V>;
+    using entry_ref = std::pair<key, V&>;
+    using entry_ref_const = std::pair<key, const V&>;
 
     std::array<std::optional<V>, 2> m_vals{};
 
@@ -333,7 +333,7 @@ public:
         return !m_vals[0] && !m_vals[1];
     }
 
-    [[nodiscard]] constexpr std::optional<Key> min_key() const
+    [[nodiscard]] constexpr std::optional<key> min_key() const
     {
         if (m_vals[0])
             return 0;
@@ -342,7 +342,7 @@ public:
         return std::nullopt;
     }
 
-    [[nodiscard]] constexpr std::optional<EntryRefConst> cminimum() const
+    [[nodiscard]] constexpr std::optional<entry_ref_const> cminimum() const
     {
         auto k = min_key();
         if (!k)
@@ -351,7 +351,7 @@ public:
                               std::reference_wrapper{*m_vals[k->to_ullong()]});
     }
 
-    [[nodiscard]] constexpr std::optional<EntryRef> minimum()
+    [[nodiscard]] constexpr std::optional<entry_ref> minimum()
     {
         auto k = min_key();
         if (!k)
@@ -360,7 +360,7 @@ public:
                               std::reference_wrapper{*m_vals[k->to_ullong()]});
     }
 
-    [[nodiscard]] constexpr std::optional<Key> max_key() const
+    [[nodiscard]] constexpr std::optional<key> max_key() const
     {
         if (m_vals[1])
             return 1;
@@ -369,7 +369,7 @@ public:
         return std::nullopt;
     }
 
-    [[nodiscard]] constexpr std::optional<EntryRefConst> cmaximum() const
+    [[nodiscard]] constexpr std::optional<entry_ref_const> cmaximum() const
     {
         auto k = max_key();
         if (!k)
@@ -378,7 +378,7 @@ public:
                               std::reference_wrapper{*m_vals[k->to_ullong()]});
     }
 
-    [[nodiscard]] constexpr std::optional<EntryRef> maximum()
+    [[nodiscard]] constexpr std::optional<entry_ref> maximum()
     {
         auto k = max_key();
         if (!k)
@@ -387,12 +387,12 @@ public:
                               std::reference_wrapper{*m_vals[k->to_ullong()]});
     }
 
-    [[nodiscard]] constexpr std::size_t count(const Key& k) const
+    [[nodiscard]] constexpr std::size_t count(const key& k) const
     {
         return m_vals[k.to_ullong()].has_value();
     }
 
-    [[nodiscard]] constexpr V& at(const Key& k)
+    [[nodiscard]] constexpr V& at(const key& k)
     {
         auto& val = m_vals[k.to_ullong()];
         if (!val)
@@ -400,7 +400,7 @@ public:
         return *val;
     }
 
-    [[nodiscard]] constexpr const V& at(const Key& k) const
+    [[nodiscard]] constexpr const V& at(const key& k) const
     {
         auto& val = m_vals[k.to_ullong()];
         if (!val)
@@ -408,7 +408,7 @@ public:
         return *val;
     }
 
-    [[nodiscard]] std::optional<Key> successor(const Key& k) const
+    [[nodiscard]] std::optional<key> successor(const key& k) const
     {
         if (k == 0 && m_vals[1])
             return 1;
@@ -416,7 +416,7 @@ public:
         return std::nullopt;
     }
 
-    [[nodiscard]] std::optional<Key> predecessor(const Key& k) const
+    [[nodiscard]] std::optional<key> predecessor(const key& k) const
     {
         if (k == 1 && m_vals[0])
             return 0;
@@ -424,12 +424,12 @@ public:
         return std::nullopt;
     }
 
-    constexpr void insert(const Key& k, V val)
+    constexpr void insert(const key& k, V val)
     {
         m_vals[k.to_ullong()] = std::move(val);
     }
 
-    constexpr bool erase(const Key& k)
+    constexpr bool erase(const key& k)
     {
         bool res = m_vals[k.to_ullong()].has_value();
         m_vals[k.to_ullong()].reset();

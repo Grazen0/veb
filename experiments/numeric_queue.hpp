@@ -13,7 +13,7 @@
 
 template<std::size_t W>
     requires(W <= 64)
-using LeastUint = std::conditional_t<
+using least_uint = std::conditional_t<
     W <= 8, std::uint8_t,
     std::conditional_t<
         W <= 16, std::uint16_t,
@@ -74,8 +74,8 @@ template<std::size_t W, typename T>
     requires(std::movable<T> && W <= 64)
 class PriorityQueueQueue {
 private:
-    using Entry = std::pair<LeastUint<W>, T>;
-    std::priority_queue<Entry, std::vector<Entry>, std::greater<>> pq;
+    using entry = std::pair<least_uint<W>, T>;
+    std::priority_queue<entry, std::vector<entry>, std::greater<>> pq;
 
 public:
     using value_type = T;
@@ -93,7 +93,7 @@ public:
 
     std::pair<std::bitset<W>, T> pop()
     {
-        auto [k, val] = std::move(const_cast<Entry&>(pq.top()));
+        auto [k, val] = std::move(const_cast<entry&>(pq.top()));
         pq.pop();
 
         return std::make_pair(k, std::move(val));
