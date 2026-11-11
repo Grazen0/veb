@@ -8,21 +8,11 @@
 #include <boost/heap/policies.hpp>
 #include <concepts>
 #include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <queue>
 #include <set>
-#include <type_traits>
 #include <veb.hpp>
 #include <vector>
-
-template<std::size_t W>
-    requires(W <= 64)
-using least_uint = std::conditional_t<
-    W <= 8, std::uint8_t,
-    std::conditional_t<
-        W <= 16, std::uint16_t,
-        std::conditional_t<W <= 32, std::uint32_t, std::uint64_t>>>;
 
 template<typename Q>
 concept numeric_queue =

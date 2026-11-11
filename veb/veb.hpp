@@ -5,6 +5,7 @@
 #include <bitset>
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <functional>
 #include <memory>
@@ -14,6 +15,14 @@
 #include <unordered_map>
 #include <utility>
 #include <variant>
+
+template<std::size_t W>
+    requires(W <= 64)
+using least_uint = std::conditional_t<
+    W <= 8, std::uint8_t,
+    std::conditional_t<
+        W <= 16, std::uint16_t,
+        std::conditional_t<W <= 32, std::uint32_t, std::uint64_t>>>;
 
 template<std::size_t W, typename V>
     requires(1 <= W && W <= 64) // required for to_ullong() not to explode
@@ -295,11 +304,17 @@ public:
             return false;
 
         if (!hi_cluster.min_key()) {
+            m_clusters.erase(hi); // invalidates hi_cluster
+
             assert(m_summary);
             m_summary->erase(hi);
+            if (m_summary->empty())
+                m_summary.reset();
 
             if (k == m_max) {
-                auto summary_max = m_summary->max_key();
+                auto summary_max =
+                    m_summary ? m_summary->max_key() : std::nullopt;
+
                 if (!summary_max) {
                     m_max = m_min->first;
                 } else {
