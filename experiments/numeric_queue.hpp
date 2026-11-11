@@ -3,9 +3,13 @@
 
 #include <algorithm>
 #include <bitset>
+#include <boost/heap/binomial_heap.hpp>
+#include <boost/heap/fibonacci_heap.hpp>
+#include <boost/heap/policies.hpp>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <queue>
 #include <set>
 #include <type_traits>
@@ -96,7 +100,6 @@ public:
     {
         auto [k, val] = std::move(const_cast<entry&>(pq.top()));
         pq.pop();
-
         return std::make_pair(k, std::move(val));
     }
 };
@@ -127,6 +130,63 @@ public:
         auto it = s.begin();
         auto res = std::move(*it);
         s.erase(it);
+        return res;
+    }
+};
+template<std::size_t W, typename T>
+    requires(std::movable<T> && W <= 64)
+class BinomialHeapQueue {
+private:
+    using entry = std::pair<least_uint<W>, T>;
+    boost::heap::binomial_heap<entry, boost::heap::compare<std::greater<>>> bh;
+
+public:
+    using value_type = T;
+    static constexpr std::size_t key_width = W;
+
+    [[nodiscard]] constexpr bool empty() const
+    {
+        return bh.empty();
+    }
+
+    constexpr void push(const std::bitset<W>& k, T val)
+    {
+        bh.emplace(k.to_ullong(), std::move(val));
+    }
+
+    std::pair<std::bitset<W>, T> pop()
+    {
+        auto res = std::move(const_cast<entry&>(bh.top()));
+        bh.pop();
+        return res;
+    }
+};
+
+template<std::size_t W, typename T>
+    requires(std::movable<T> && W <= 64)
+class FibonacciHeapQueue {
+private:
+    using entry = std::pair<least_uint<W>, T>;
+    boost::heap::fibonacci_heap<entry, boost::heap::compare<std::greater<>>> fh;
+
+public:
+    using value_type = T;
+    static constexpr std::size_t key_width = W;
+
+    [[nodiscard]] constexpr bool empty() const
+    {
+        return fh.empty();
+    }
+
+    constexpr void push(const std::bitset<W>& k, T val)
+    {
+        fh.emplace(k.to_ullong(), std::move(val));
+    }
+
+    std::pair<std::bitset<W>, T> pop()
+    {
+        auto res = std::move(const_cast<entry&>(fh.top()));
+        fh.pop();
         return res;
     }
 };
