@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <queue>
+#include <set>
 #include <type_traits>
 #include <veb.hpp>
 #include <vector>
@@ -97,6 +98,36 @@ public:
         pq.pop();
 
         return std::make_pair(k, std::move(val));
+    }
+};
+
+template<std::size_t W, typename T>
+    requires(std::movable<T> && W <= 64)
+class MultisetQueue {
+private:
+    using entry = std::pair<least_uint<W>, T>;
+    std::multiset<entry> s{};
+
+public:
+    using value_type = T;
+    static constexpr std::size_t key_width = W;
+
+    [[nodiscard]] constexpr bool empty() const
+    {
+        return s.empty();
+    }
+
+    constexpr void push(const std::bitset<W>& k, T val)
+    {
+        s.emplace(k.to_ullong(), std::move(val));
+    }
+
+    std::pair<std::bitset<W>, T> pop()
+    {
+        auto it = s.begin();
+        auto res = std::move(*it);
+        s.erase(it);
+        return res;
     }
 };
 
