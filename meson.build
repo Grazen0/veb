@@ -56,7 +56,15 @@ test_exe = executable(
   dependencies : dependencies + test_dependencies,
   link_with : lib,
 )
-test('eda_structs', test_exe)
+test('veb_test', test_exe)
+
+benchmarks_exe = executable(
+  'veb_benchmarks',
+  'test/veb_benchmarks.cpp',
+  dependencies : dependencies + test_dependencies,
+  link_with : lib,
+)
+test('veb_benchmarks', benchmarks_exe)
 
 experiment_dependencies = [
   veb_dep,
