@@ -10,6 +10,9 @@ meson setup build
 meson subprojects download
 meson compile -C build
 
-# Correr tests y benchmarks
+# Correr tests
 meson test -C build
+
+# Ejecutar benchmarks
+./run_benchmarks.sh
 ```

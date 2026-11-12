@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Catch2TestRun name="prim_bench" rng-seed="2009108347" xml-format-version="3" catch2-version="3.15.3">
+  <TestCase name="Prim benchmarks" tags="[benchmark]" filename="../experiments/prim/bench.cpp" line="48">
+    <Section name="100k_1.in" filename="../experiments/prim/bench.cpp" line="51">
+      <BenchmarkResults name="Veb" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="1.69814e+11">
+        <!-- All values in nano seconds -->
+        <mean value="2.01609e+09" lowerBound="1.95726e+09" upperBound="2.10118e+09" ci="0.95"/>
+        <standardDeviation value="3.57166e+08" lowerBound="2.70613e+08" upperBound="4.53197e+08" ci="0.95"/>
+        <outliers variance="0.925694" lowMild="2" lowSevere="6" highMild="0" highSevere="18"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="std::priority_queue" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="4.01019e+10">
+        <!-- All values in nano seconds -->
+        <mean value="2.44767e+08" lowerBound="2.34501e+08" upperBound="2.58669e+08" ci="0.95"/>
+        <standardDeviation value="6.03539e+07" lowerBound="4.72076e+07" upperBound="7.24162e+07" ci="0.95"/>
+        <outliers variance="0.967582" lowMild="0" lowSevere="0" highMild="0" highSevere="23"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="std::multiset" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="3.35574e+10">
+        <!-- All values in nano seconds -->
+        <mean value="4.59011e+08" lowerBound="4.35633e+08" upperBound="4.85778e+08" ci="0.95"/>
+        <standardDeviation value="1.27761e+08" lowerBound="1.13357e+08" upperBound="1.39646e+08" ci="0.95"/>
+        <outliers variance="0.968102" lowMild="0" lowSevere="0" highMild="0" highSevere="0"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="boost::heap::binomial_heap" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="1.83664e+11">
+        <!-- All values in nano seconds -->
+        <mean value="2.14994e+09" lowerBound="2.06048e+09" upperBound="2.25558e+09" ci="0.95"/>
+        <standardDeviation value="4.95049e+08" lowerBound="4.30487e+08" upperBound="5.59349e+08" ci="0.95"/>
+        <outliers variance="0.957284" lowMild="0" lowSevere="0" highMild="0" highSevere="0"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="boost::heap::fibonacci_heap" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="6.39388e+10">
+        <!-- All values in nano seconds -->
+        <mean value="8.27301e+08" lowerBound="7.88748e+08" upperBound="8.72068e+08" ci="0.95"/>
+        <standardDeviation value="2.12778e+08" lowerBound="1.86471e+08" upperBound="2.3499e+08" ci="0.95"/>
+        <outliers variance="0.967778" lowMild="0" lowSevere="0" highMild="0" highSevere="0"/>
+      </BenchmarkResults>
+      <OverallResults successes="0" failures="0" expectedFailures="0" skipped="false"/>
+    </Section>
+    <Section name="100k_2.in" filename="../experiments/prim/bench.cpp" line="51">
+      <BenchmarkResults name="Veb" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="7.74407e+10">
+        <!-- All values in nano seconds -->
+        <mean value="9.30802e+08" lowerBound="8.85335e+08" upperBound="9.82513e+08" ci="0.95"/>
+        <standardDeviation value="2.47035e+08" lowerBound="2.2169e+08" upperBound="2.66562e+08" ci="0.95"/>
+        <outliers variance="0.967913" lowMild="0" lowSevere="0" highMild="0" highSevere="0"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="std::priority_queue" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="4.83032e+10">
+        <!-- All values in nano seconds -->
+        <mean value="2.89129e+08" lowerBound="2.75875e+08" upperBound="3.06267e+08" ci="0.95"/>
+        <standardDeviation value="7.62147e+07" lowerBound="6.21451e+07" upperBound="8.87684e+07" ci="0.95"/>
+        <outliers variance="0.967884" lowMild="0" lowSevere="0" highMild="1" highSevere="19"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="std::multiset" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="4.03126e+10">
+        <!-- All values in nano seconds -->
+        <mean value="4.58402e+08" lowerBound="4.3573e+08" upperBound="4.8306e+08" ci="0.95"/>
+        <standardDeviation value="1.21048e+08" lowerBound="1.1154e+08" upperBound="1.2688e+08" ci="0.95"/>
+        <outliers variance="0.967892" lowMild="0" lowSevere="0" highMild="0" highSevere="0"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="boost::heap::binomial_heap" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="2.01332e+11">
+        <!-- All values in nano seconds -->
+        <mean value="2.29861e+09" lowerBound="2.20864e+09" upperBound="2.41008e+09" ci="0.95"/>
+        <standardDeviation value="5.05918e+08" lowerBound="4.26374e+08" upperBound="5.84818e+08" ci="0.95"/>
+        <outliers variance="0.957027" lowMild="0" lowSevere="0" highMild="9" highSevere="0"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="boost::heap::fibonacci_heap" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="7.88115e+10">
+        <!-- All values in nano seconds -->
+        <mean value="9.26579e+08" lowerBound="8.85236e+08" upperBound="9.7521e+08" ci="0.95"/>
+        <standardDeviation value="2.28009e+08" lowerBound="1.95565e+08" upperBound="2.5536e+08" ci="0.95"/>
+        <outliers variance="0.967572" lowMild="0" lowSevere="0" highMild="20" highSevere="0"/>
+      </BenchmarkResults>
+      <OverallResults successes="0" failures="0" expectedFailures="0" skipped="false"/>
+    </Section>
+    <Section name="100k_3.in" filename="../experiments/prim/bench.cpp" line="51">
+      <BenchmarkResults name="Veb" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="2.03175e+11">
+        <!-- All values in nano seconds -->
+        <mean value="2.42971e+09" lowerBound="2.33448e+09" upperBound="2.53548e+09" ci="0.95"/>
+        <standardDeviation value="5.15092e+08" lowerBound="4.66088e+08" upperBound="5.64282e+08" ci="0.95"/>
+        <outliers variance="0.946862" lowMild="0" lowSevere="0" highMild="0" highSevere="0"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="std::priority_queue" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="2.5148e+10">
+        <!-- All values in nano seconds -->
+        <mean value="2.95242e+08" lowerBound="2.79186e+08" upperBound="3.13259e+08" ci="0.95"/>
+        <standardDeviation value="8.69622e+07" lowerBound="7.89683e+07" upperBound="9.25518e+07" ci="0.95"/>
+        <outliers variance="0.97827" lowMild="0" lowSevere="0" highMild="0" highSevere="0"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="std::multiset" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="4.65233e+10">
+        <!-- All values in nano seconds -->
+        <mean value="5.1738e+08" lowerBound="4.9427e+08" upperBound="5.4519e+08" ci="0.95"/>
+        <standardDeviation value="1.28472e+08" lowerBound="1.11068e+08" upperBound="1.42502e+08" ci="0.95"/>
+        <outliers variance="0.967616" lowMild="0" lowSevere="0" highMild="7" highSevere="0"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="boost::heap::binomial_heap" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="2.00896e+11">
+        <!-- All values in nano seconds -->
+        <mean value="2.33752e+09" lowerBound="2.24365e+09" upperBound="2.4515e+09" ci="0.95"/>
+        <standardDeviation value="5.27999e+08" lowerBound="4.52837e+08" upperBound="6.03556e+08" ci="0.95"/>
+        <outliers variance="0.957178" lowMild="0" lowSevere="0" highMild="7" highSevere="0"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="boost::heap::fibonacci_heap" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="7.93091e+10">
+        <!-- All values in nano seconds -->
+        <mean value="9.1769e+08" lowerBound="8.78738e+08" upperBound="9.66144e+08" ci="0.95"/>
+        <standardDeviation value="2.20458e+08" lowerBound="1.87484e+08" upperBound="2.49671e+08" ci="0.95"/>
+        <outliers variance="0.957505" lowMild="0" lowSevere="0" highMild="19" highSevere="0"/>
+      </BenchmarkResults>
+      <OverallResults successes="0" failures="0" expectedFailures="0" skipped="false"/>
+    </Section>
+    <Section name="100k_4.in" filename="../experiments/prim/bench.cpp" line="51">
+      <BenchmarkResults name="Veb" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="2.68988e+11">
+        <!-- All values in nano seconds -->
+        <mean value="2.3948e+09" lowerBound="2.29766e+09" upperBound="2.50085e+09" ci="0.95"/>
+        <standardDeviation value="5.18551e+08" lowerBound="4.71228e+08" upperBound="5.63882e+08" ci="0.95"/>
+        <outliers variance="0.946992" lowMild="0" lowSevere="0" highMild="0" highSevere="0"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="std::priority_queue" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="2.3162e+10">
+        <!-- All values in nano seconds -->
+        <mean value="2.91588e+08" lowerBound="2.75545e+08" upperBound="3.09403e+08" ci="0.95"/>
+        <standardDeviation value="8.6117e+07" lowerBound="7.83361e+07" upperBound="9.14247e+07" ci="0.95"/>
+        <outliers variance="0.97828" lowMild="0" lowSevere="0" highMild="0" highSevere="0"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="std::multiset" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="4.84289e+10">
+        <!-- All values in nano seconds -->
+        <mean value="5.31621e+08" lowerBound="5.05587e+08" upperBound="5.59868e+08" ci="0.95"/>
+        <standardDeviation value="1.38935e+08" lowerBound="1.27591e+08" upperBound="1.46888e+08" ci="0.95"/>
+        <outliers variance="0.967847" lowMild="0" lowSevere="0" highMild="0" highSevere="0"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="boost::heap::binomial_heap" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="2.56015e+11">
+        <!-- All values in nano seconds -->
+        <mean value="2.35905e+09" lowerBound="2.25724e+09" upperBound="2.47555e+09" ci="0.95"/>
+        <standardDeviation value="5.5419e+08" lowerBound="4.94332e+08" upperBound="6.12516e+08" ci="0.95"/>
+        <outliers variance="0.957391" lowMild="0" lowSevere="0" highMild="0" highSevere="0"/>
+      </BenchmarkResults>
+      <BenchmarkResults name="boost::heap::fibonacci_heap" samples="100" resamples="100000" iterations="1" clockResolution="15.2312" estimatedDuration="8.79811e+10">
+        <!-- All values in nano seconds -->
+        <mean value="9.3363e+08" lowerBound="8.89344e+08" upperBound="9.84168e+08" ci="0.95"/>
+        <standardDeviation value="2.42583e+08" lowerBound="2.1718e+08" upperBound="2.61961e+08" ci="0.95"/>
+        <outliers variance="0.967822" lowMild="0" lowSevere="0" highMild="0" highSevere="0"/>
+      </BenchmarkResults>
+      <OverallResults successes="0" failures="0" expectedFailures="0" skipped="false"/>
+    </Section>
+    <OverallResult success="true" skips="0"/>
+  </TestCase>
+  <OverallResults successes="0" failures="0" expectedFailures="0" skips="0"/>
+  <OverallResultsCases successes="1" failures="0" expectedFailures="0" skips="0"/>
+</Catch2TestRun>
