@@ -38,7 +38,7 @@ namespace prim
                 q.push(w, j);
         }
 
-        if (std::ranges::any_of(vis, std::negate<bool>{}))
+        if (std::ranges::any_of(vis, std::logical_not<>{}))
             return std::nullopt;
 
         return cost;

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <print>
 
+// https://cses.fi/problemset/task/1671
 int main()
 {
     std::size_t n = 0;
@@ -18,18 +19,13 @@ int main()
         --a;
         --b;
         adj[a].emplace_back(b, w);
-        adj[b].emplace_back(a, w);
     }
-    auto path = dijkstra::dijkstra<VebQueue>(adj, 0, n - 1);
 
-    if (path.empty()) {
-        std::println("-1\n");
-    } else {
-        for (auto node : path)
-            std::print("{} ", node + 1);
+    auto dist = dijkstra::dijkstra<VebQueue>(adj, 0);
 
-        std::println();
-    }
+    for (auto d : dist)
+        std::print("{} ", d);
+    std::println();
 
     return 0;
 }

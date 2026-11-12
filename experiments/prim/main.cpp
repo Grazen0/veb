@@ -2,6 +2,7 @@
 #include <iostream>
 #include <print>
 
+// https://cses.fi/problemset/task/1675
 int main()
 {
     std::size_t n = 0;
@@ -26,7 +27,7 @@ int main()
     if (result)
         std::println("{}", *result);
     else
-        std::println("IMPOSSIBLE\n");
+        std::println("IMPOSSIBLE");
 
     return 0;
 }

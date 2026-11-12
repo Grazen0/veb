@@ -27,7 +27,6 @@ namespace
             --a;
             --b;
             adj[a].emplace_back(b, w);
-            adj[b].emplace_back(a, w);
         }
 
         return adj;
@@ -47,12 +46,6 @@ namespace
         std::ranges::sort(paths);
         return paths;
     }
-
-    template<template<std::size_t, typename> typename Queue>
-    std::vector<std::size_t> run(const dijkstra::graph& adj)
-    {
-        return dijkstra::dijkstra<Queue>(adj, 0, adj.size() - 1);
-    }
 } // namespace
 
 TEST_CASE("Dijkstra benchmarks", "[benchmark]")
@@ -64,23 +57,23 @@ TEST_CASE("Dijkstra benchmarks", "[benchmark]")
 
             BENCHMARK("Veb")
             {
-                return run<VebQueue>(graph);
+                return dijkstra::dijkstra<VebQueue>(graph, 0);
             };
             BENCHMARK("std::priority_queue")
             {
-                return run<PriorityQueueQueue>(graph);
+                return dijkstra::dijkstra<PriorityQueueQueue>(graph, 0);
             };
             BENCHMARK("std::multiset")
             {
-                return run<MultisetQueue>(graph);
+                return dijkstra::dijkstra<MultisetQueue>(graph, 0);
             };
             BENCHMARK("boost::heap::binomial_heap")
             {
-                return run<BinomialHeapQueue>(graph);
+                return dijkstra::dijkstra<BinomialHeapQueue>(graph, 0);
             };
             BENCHMARK("boost::heap::fibonacci_heap")
             {
-                return run<FibonacciHeapQueue>(graph);
+                return dijkstra::dijkstra<FibonacciHeapQueue>(graph, 0);
             };
         }
     }

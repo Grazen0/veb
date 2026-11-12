@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <catch2/benchmark/catch_benchmark.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <vector>
@@ -13,8 +14,9 @@ namespace
     huffman::frequency_map read_input(const std::filesystem::path& path)
     {
         std::ifstream in(path);
+        std::size_t x = 0;
         std::size_t n = 0;
-        in >> n;
+        in >> x >> n;
 
         huffman::frequency_map freqs(n);
         for (auto& f : freqs)

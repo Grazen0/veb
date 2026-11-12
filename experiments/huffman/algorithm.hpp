@@ -19,20 +19,9 @@ namespace huffman
     template<template<std::size_t W, typename T> typename Queue>
     using huffman_queue = Queue<64, std::unique_ptr<Node>>;
 
-    inline void dfs(const Node& node, std::size_t depth, std::uint64_t& ans)
-    {
-        if (!node.left) {
-            ans += node.val * depth;
-            return;
-        }
-
-        dfs(*node.left, depth + 1, ans);
-        dfs(*node.right, depth + 1, ans);
-    }
-
     template<template<std::size_t, typename> typename Queue>
         requires(numeric_queue<huffman_queue<Queue>>)
-    std::uint64_t huffman(const frequency_map& freqs)
+    std::unique_ptr<Node> huffman(const frequency_map& freqs)
     {
         huffman_queue<Queue> q;
 
@@ -47,11 +36,6 @@ namespace huffman
                                                std::move(right)));
         }
 
-        assert(!q.empty());
-        auto root = q.pop().second;
-
-        std::uint64_t ans = 0;
-        dfs(*root, 1, ans);
-        return ans;
+        return q.pop().second;
     }
 } // namespace huffman
