@@ -1,6 +1,4 @@
-#ifndef VEB_VEB_HPP
-#define VEB_VEB_HPP
-
+#pragma once
 #include <array>
 #include <bitset>
 #include <cassert>
@@ -10,7 +8,6 @@
 #include <functional>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -451,5 +448,3 @@ public:
         return res;
     }
 };
-
-#endif

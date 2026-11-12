@@ -1,22 +1,23 @@
-#ifndef EXPERIMENTS_NUMERIC_QUEUE_HPP
-#define EXPERIMENTS_NUMERIC_QUEUE_HPP
-
+#pragma once
+#include "veb.hpp"
 #include <algorithm>
 #include <bitset>
 #include <boost/heap/binomial_heap.hpp>
 #include <boost/heap/fibonacci_heap.hpp>
 #include <boost/heap/policies.hpp>
+#include <cassert>
 #include <concepts>
 #include <cstddef>
 #include <functional>
+#include <memory>
 #include <queue>
 #include <set>
-#include <veb.hpp>
+#include <utility>
 #include <vector>
 
 template<typename Q>
 concept numeric_queue =
-    requires(Q q, const Q& cq, const std::bitset<Q::key_width>& key,
+    requires(Q q, const Q cq, const std::bitset<Q::key_width>& key,
              typename Q::value_type val) {
         typename Q::value_type;
         { Q::key_width } -> std::same_as<const std::size_t&>;
@@ -29,21 +30,20 @@ concept numeric_queue =
     };
 
 template<std::size_t W, typename T>
-    requires(std::movable<T>)
+    requires std::movable<T>
 class VebQueue {
-private:
     Veb<W, std::vector<T>> veb;
 
 public:
     using value_type = T;
     static constexpr std::size_t key_width = W;
 
-    [[nodiscard]] constexpr bool empty() const
+    [[nodiscard]] bool empty() const
     {
         return veb.empty();
     }
 
-    constexpr void push(const std::bitset<W>& k, T val)
+    void push(const std::bitset<W>& k, T val)
     {
         veb[k].emplace_back(std::move(val));
     }
@@ -51,24 +51,18 @@ public:
     std::pair<std::bitset<W>, T> pop()
     {
         assert(!veb.empty());
-
-        auto [k, vs] = *veb.minimum();
-        assert(!vs.empty());
-
-        T val = std::move(vs.back());
-        vs.pop_back();
-
-        if (vs.empty())
+        auto [k, values] = *veb.minimum();
+        T value = std::move(values.back());
+        values.pop_back();
+        if (values.empty())
             veb.erase(k);
-
-        return std::make_pair(k, std::move(val));
+        return {k, std::move(value)};
     }
 };
 
 template<std::size_t W, typename T>
     requires(std::movable<T> && W <= 64)
 class PriorityQueueQueue {
-private:
     using entry = std::pair<least_uint<W>, T>;
     std::priority_queue<entry, std::vector<entry>, std::greater<>> pq;
 
@@ -76,109 +70,114 @@ public:
     using value_type = T;
     static constexpr std::size_t key_width = W;
 
-    [[nodiscard]] constexpr bool empty() const
+    [[nodiscard]] bool empty() const
     {
         return pq.empty();
     }
 
-    constexpr void push(const std::bitset<W>& k, T val)
+    void push(const std::bitset<W>& k, T val)
     {
         pq.emplace(k.to_ullong(), std::move(val));
     }
 
     std::pair<std::bitset<W>, T> pop()
     {
-        auto [k, val] = std::move(const_cast<entry&>(pq.top()));
+        auto result = std::move(const_cast<entry&>(pq.top()));
         pq.pop();
-        return std::make_pair(k, std::move(val));
+        return result;
     }
 };
 
 template<std::size_t W, typename T>
     requires(std::movable<T> && W <= 64)
 class MultisetQueue {
-private:
-    using entry = std::pair<least_uint<W>, T>;
-    std::multiset<entry> s{};
+    using entry = std::pair<least_uint<W>, std::shared_ptr<T>>;
+    struct compare {
+        bool operator()(const entry& a, const entry& b) const
+        {
+            return a.first < b.first;
+        }
+    };
+    std::multiset<entry, compare> values;
 
 public:
     using value_type = T;
     static constexpr std::size_t key_width = W;
 
-    [[nodiscard]] constexpr bool empty() const
+    [[nodiscard]] bool empty() const
     {
-        return s.empty();
+        return values.empty();
     }
 
-    constexpr void push(const std::bitset<W>& k, T val)
+    void push(const std::bitset<W>& k, T val)
     {
-        s.emplace(k.to_ullong(), std::move(val));
+        values.emplace(k.to_ullong(), std::make_shared<T>(std::move(val)));
     }
 
     std::pair<std::bitset<W>, T> pop()
     {
-        auto it = s.begin();
-        auto res = std::move(*it);
-        s.erase(it);
-        return res;
+        auto it = values.begin();
+        auto key = it->first;
+        T value = std::move(*it->second);
+        values.erase(it);
+        return {key, std::move(value)};
     }
 };
+
 template<std::size_t W, typename T>
     requires(std::movable<T> && W <= 64)
 class BinomialHeapQueue {
-private:
     using entry = std::pair<least_uint<W>, T>;
-    boost::heap::binomial_heap<entry, boost::heap::compare<std::greater<>>> bh;
+    boost::heap::binomial_heap<entry, boost::heap::compare<std::greater<>>>
+        heap;
 
 public:
     using value_type = T;
     static constexpr std::size_t key_width = W;
 
-    [[nodiscard]] constexpr bool empty() const
+    [[nodiscard]] bool empty() const
     {
-        return bh.empty();
+        return heap.empty();
     }
 
-    constexpr void push(const std::bitset<W>& k, T val)
+    void push(const std::bitset<W>& k, T val)
     {
-        bh.emplace(k.to_ullong(), std::move(val));
+        heap.emplace(k.to_ullong(), std::move(val));
     }
 
     std::pair<std::bitset<W>, T> pop()
     {
-        auto res = std::move(const_cast<entry&>(bh.top()));
-        bh.pop();
-        return res;
+        auto result = std::move(const_cast<entry&>(heap.top()));
+        heap.pop();
+        return result;
     }
 };
 
 template<std::size_t W, typename T>
     requires(std::movable<T> && W <= 64)
 class FibonacciHeapQueue {
-private:
     using entry = std::pair<least_uint<W>, T>;
-    boost::heap::fibonacci_heap<entry, boost::heap::compare<std::greater<>>> fh;
+    boost::heap::fibonacci_heap<entry, boost::heap::compare<std::greater<>>>
+        heap;
 
 public:
     using value_type = T;
     static constexpr std::size_t key_width = W;
 
-    [[nodiscard]] constexpr bool empty() const
+    [[nodiscard]] bool empty() const
     {
-        return fh.empty();
+        return heap.empty();
     }
 
-    constexpr void push(const std::bitset<W>& k, T val)
+    void push(const std::bitset<W>& k, T val)
     {
-        fh.emplace(k.to_ullong(), std::move(val));
+        heap.emplace(k.to_ullong(), std::move(val));
     }
 
     std::pair<std::bitset<W>, T> pop()
     {
-        auto res = std::move(const_cast<entry&>(fh.top()));
-        fh.pop();
-        return res;
+        auto result = std::move(const_cast<entry&>(heap.top()));
+        heap.pop();
+        return result;
     }
 };
-
-#endif

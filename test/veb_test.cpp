@@ -32,7 +32,6 @@ namespace
         return 1ULL << W;
     }
 
-    // Read a value through the pointer-returning get() (const overload).
     template<std::size_t W, typename V>
     std::optional<V> lookup(const Veb<W, V>& veb, u64 key)
     {
@@ -60,7 +59,6 @@ namespace
         return std::pair<u64, int>{e->first.to_ullong(), e->second};
     }
 
-    // ---- reference queries on top of std::map ----------------------------
     Opt ref_succ(const Model& m, u64 x)
     {
         auto it = m.upper_bound(x);
@@ -124,8 +122,6 @@ namespace
         return os.str();
     }
 
-    // Non-asserting comparison helpers: they build a diagnostic string so a
-    // failure shows exactly what differed.
     template<std::size_t W>
     void diff_key(std::ostringstream& os, const Veb<W, int>& veb,
                   const Model& m, u64 x)
@@ -171,21 +167,18 @@ namespace
                << fmt(ref_max_entry(m)) << "; ";
     }
 
-    // Test harness: a Veb<W,int> plus a std::map model kept in lockstep.
     template<std::size_t W>
     struct H {
         std::unique_ptr<Veb<W, int>> veb = std::make_unique<Veb<W, int>>();
         Model model;
         int counter = 0;
 
-        // insert-or-update with an explicit value
         void put(u64 k, int v)
         {
             veb->insert(Bits<W>(k), v);
             model[k] = v;
         }
 
-        // insert-or-update with a fresh, unique value; returns that value
         int put(u64 k)
         {
             int v = ++counter;
@@ -199,7 +192,6 @@ namespace
                 put(k);
         }
 
-        // erase, asserting the returned bool matches the model
         bool erase(u64 k)
         {
             const bool expected = model.erase(k) == 1;
@@ -267,8 +259,6 @@ namespace
             REQUIRE(d.empty());
         }
 
-        // Checks min/max (keys and entries), then every stored key, its two
-        // integer neighbours, and a few fixed probes (0, middle, last).
         void check_all() const
         {
             const u64 last = universe_size<W>() - 1;
@@ -292,10 +282,6 @@ namespace
         }
     };
 } // namespace
-
-// ---------------------------------------------------------------------------
-// Basics
-// ---------------------------------------------------------------------------
 
 TEST_CASE("misc veb operations", "[veb]")
 {
@@ -400,7 +386,6 @@ TEMPLATE_TEST_CASE_SIG("single element", "[veb][single]", ((std::size_t W), W),
             REQUIRE(!h.veb->maximum().has_value());
             h.check_all();
 
-            // a second removal finds nothing
             REQUIRE(!h.erase(k));
             h.check_all();
         }
@@ -529,10 +514,6 @@ TEST_CASE("veb of width 1", "[veb][w1]")
     }
 }
 
-// ---------------------------------------------------------------------------
-// insert / count
-// ---------------------------------------------------------------------------
-
 TEST_CASE("insert and count on Veb<8>", "[veb][count][insert]")
 {
     H<8> h;
@@ -624,10 +605,6 @@ TEST_CASE("insert and count on Veb<8>", "[veb][count][insert]")
     }
 }
 
-// ---------------------------------------------------------------------------
-// get() returns a pointer to the stored value
-// ---------------------------------------------------------------------------
-
 TEST_CASE("get returns a pointer to the stored value", "[veb][get]")
 {
     auto veb = std::make_unique<Veb<8, int>>();
@@ -656,7 +633,6 @@ TEST_CASE("get returns a pointer to the stored value", "[veb][get]")
         REQUIRE(p9 == 90);
         REQUIRE(p200 == 2000);
 
-        // distinct keys have distinct storage
         REQUIRE(p5 != p9);
         REQUIRE(p9 != p200);
         REQUIRE(p5 != p200);
@@ -709,7 +685,6 @@ TEST_CASE("get returns a pointer to the stored value", "[veb][get]")
         REQUIRE(mutable_min->second == veb->at(Bits<8>(5)));
         REQUIRE(mutable_max->second == veb->at(Bits<8>(200)));
 
-        // structure is unchanged
         REQUIRE(val(veb->min_key()) == Opt{5});
         REQUIRE(val(veb->max_key()) == Opt{200});
         REQUIRE(val(veb->successor(Bits<8>(5))) == Opt{9});
@@ -757,10 +732,6 @@ TEST_CASE("get returns a pointer to the stored value", "[veb][get]")
     }
 }
 
-// ---------------------------------------------------------------------------
-// insert as upsert (existing key -> value is updated, no duplicate)
-// ---------------------------------------------------------------------------
-
 TEST_CASE("inserting an existing key updates its value", "[veb][upsert]")
 {
     H<8> h;
@@ -774,7 +745,6 @@ TEST_CASE("inserting an existing key updates its value", "[veb][upsert]")
         h.put(10, 3);
         REQUIRE(h.get(10) == OptInt{3});
 
-        // still exactly one element
         REQUIRE(h.min() == Opt{10});
         REQUIRE(h.max() == Opt{10});
         REQUIRE(!h.succ(10).has_value());
@@ -826,7 +796,6 @@ TEST_CASE("inserting an existing key updates its value", "[veb][upsert]")
         int v30 = *h.get(30);
         h.put(20, 999);
         REQUIRE(h.get(20) == OptInt{999});
-        // neighbours are untouched
         REQUIRE(h.get(10) == OptInt{v10});
         REQUIRE(h.get(30) == OptInt{v30});
         REQUIRE(h.succ(10) == Opt{20});
@@ -904,10 +873,6 @@ TEST_CASE("inserting an existing key updates its value", "[veb][upsert]")
     }
 }
 
-// ---------------------------------------------------------------------------
-// minimum / maximum / min_key / max_key
-// ---------------------------------------------------------------------------
-
 TEST_CASE("minimum and maximum track inserts", "[veb][min][max]")
 {
     H<8> h;
@@ -952,7 +917,6 @@ TEST_CASE("minimum and maximum track inserts", "[veb][min][max]")
                                  std::pair<u64, int>{255, 6}
     });
 
-    // updating existing keys never moves min/max, but changes their values
     h.put(0, 50);
     h.put(255, 60);
     h.put(101, 40);
@@ -1001,10 +965,6 @@ TEST_CASE("failed removals do not move minimum or maximum",
     REQUIRE(h.max() == Opt{200});
     h.check_all();
 }
-
-// ---------------------------------------------------------------------------
-// successor / predecessor
-// ---------------------------------------------------------------------------
 
 TEST_CASE("successor on a sparse Veb<8>", "[veb][successor]")
 {
@@ -1166,10 +1126,6 @@ TEST_CASE("predecessor walk enumerates all elements in reverse order",
     REQUIRE(walked == keys);
 }
 
-// ---------------------------------------------------------------------------
-// erase (returns true iff the key existed and was erased)
-// ---------------------------------------------------------------------------
-
 TEST_CASE("erase returns true for existing keys", "[veb][erase]")
 {
     H<8> h;
@@ -1203,7 +1159,6 @@ TEST_CASE("erase returns false for absent keys", "[veb][erase]")
             CAPTURE(x);
             REQUIRE(!h.erase(x));
         }
-        // nothing was disturbed
         h.check_all();
         REQUIRE(h.model.size() == 5);
     }
@@ -1515,10 +1470,6 @@ TEST_CASE("reuse after emptying", "[veb][erase][insert]")
     h.check_all();
 }
 
-// ---------------------------------------------------------------------------
-// Other widths and value types
-// ---------------------------------------------------------------------------
-
 TEST_CASE("veb with a non-trivial value type", "[veb][string]")
 {
     auto veb = std::make_unique<Veb<8, std::string>>();
@@ -1533,31 +1484,25 @@ TEST_CASE("veb with a non-trivial value type", "[veb][string]")
     REQUIRE(lookup(*veb, 77) == OptStr{"seventy-seven"});
     REQUIRE_THROWS(veb->at(Bits<8>(4)));
 
-    // update
     veb->insert(3, "THREE");
     REQUIRE(lookup(*veb, 3) == OptStr{"THREE"});
     REQUIRE(lookup(*veb, 77) == OptStr{"seventy-seven"});
 
-    // an empty string is still a present value
     veb->insert(77, "");
     REQUIRE(veb->count(77));
     REQUIRE(veb->at(Bits<8>(77)) == "");
 
-    // modify through the pointer
     veb->at(Bits<8>(200)).append("!");
     REQUIRE(lookup(*veb, 200) == OptStr{"two hundred!"});
 
-    // entries
     REQUIRE(veb->minimum()->first.to_ullong() == 3);
     REQUIRE(veb->minimum()->second == "THREE");
     REQUIRE(veb->maximum()->first.to_ullong() == 200);
     REQUIRE(veb->maximum()->second == "two hundred!");
 
-    // structure unaffected by updates
     REQUIRE(val(veb->successor(Bits<8>(3))) == Opt{77});
     REQUIRE(val(veb->successor(Bits<8>(77))) == Opt{200});
 
-    // removal
     REQUIRE(veb->erase(Bits<8>(77)));
     REQUIRE(!veb->erase(Bits<8>(77)));
     REQUIRE(!veb->count(77));
@@ -1569,10 +1514,6 @@ TEST_CASE("veb with a non-trivial value type", "[veb][string]")
     REQUIRE(!veb->min_key().has_value());
     REQUIRE(!veb->max_key().has_value());
 }
-
-// ---------------------------------------------------------------------------
-// Small randomized differential test against std::map
-// ---------------------------------------------------------------------------
 
 TEMPLATE_TEST_CASE_SIG("short random upsert/erase sequence vs std::map",
                        "[veb][random]", ((std::size_t W), W), 4, 8)
@@ -1587,8 +1528,6 @@ TEMPLATE_TEST_CASE_SIG("short random upsert/erase sequence vs std::map",
         u64 k = key_dist(rng);
         CAPTURE(i, k);
 
-        // ~55% upsert (insert new or update existing), ~45% erase
-        // (existing or absent)
         if (coin(rng) < 55)
             h.put(k);
         else

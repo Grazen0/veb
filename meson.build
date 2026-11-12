@@ -58,40 +58,33 @@ test_exe = executable(
 )
 test('veb_test', test_exe)
 
-benchmarks_exe = executable(
-  'veb_benchmarks',
-  'test/veb_benchmarks.cpp',
+bench_exe = executable(
+  'veb_bench',
+  'test/veb_bench.cpp',
   dependencies : dependencies + test_dependencies,
   link_with : lib,
 )
-test('veb_benchmarks', benchmarks_exe)
-
-experiment_dependencies = [
-  veb_dep,
-]
+benchmark('veb_bench', bench_exe)
 
 experiment_inc_dirs = include_directories('experiments')
+experiment_dependencies = [veb_dep, catch2_dep]
 
-dijkstra_exe = executable(
-  'dijkstra',
-  'experiments/dijkstra.cpp',
-  include_directories : experiment_inc_dirs,
-  dependencies : dependencies + experiment_dependencies,
-  link_with : lib,
-)
+foreach name : ['dijkstra', 'prim', 'huffman']
+  executable(
+    name,
+    'experiments/' + name + '/main.cpp',
+    include_directories : experiment_inc_dirs,
+    dependencies : [veb_dep],
+    link_with : lib,
+  )
 
-prim_exe = executable(
-  'prim',
-  'experiments/prim.cpp',
-  include_directories : experiment_inc_dirs,
-  dependencies : dependencies + experiment_dependencies,
-  link_with : lib,
-)
-
-huffman_exe = executable(
-  'huffman',
-  'experiments/huffman.cpp',
-  include_directories : experiment_inc_dirs,
-  dependencies : dependencies + experiment_dependencies,
-  link_with : lib,
-)
+  experiment_bench = executable(
+    name + '_bench',
+    'experiments/' + name + '/bench.cpp',
+    include_directories : experiment_inc_dirs,
+    cpp_args : ['-DEXPERIMENT_INPUT_DIR="' + meson.current_source_dir() + '/experiments/' + name + '/inputs"'],
+    dependencies : experiment_dependencies,
+    link_with : lib,
+  )
+  benchmark(name + '_bench', experiment_bench)
+endforeach

@@ -1,15 +1,15 @@
-#include "numeric_queue.hpp"
+#pragma once
+#include "common/numeric_queue.hpp"
 #include <algorithm>
-#include <cassert>
-#include <cstddef>
 #include <cstdint>
-#include <iostream>
 #include <utility>
-#include <veb.hpp>
 #include <vector>
 
-namespace
+namespace dijkstra
 {
+    using graph =
+        std::vector<std::vector<std::pair<std::size_t, std::uint64_t>>>;
+
     constexpr std::uint64_t INF = 1e18;
 
     template<template<std::size_t W, typename T> typename Queue>
@@ -17,10 +17,8 @@ namespace
 
     template<template<std::size_t W, typename T> typename Queue>
         requires(numeric_queue<dijkstra_queue<Queue>>)
-    std::vector<std::size_t> dijkstra(
-        const std::vector<std::vector<std::pair<std::size_t, std::uint64_t>>>&
-            adj,
-        std::size_t start, std::size_t end)
+    std::vector<std::size_t> dijkstra(const graph& adj, std::size_t start,
+                                      std::size_t end)
     {
         std::size_t n = adj.size();
 
@@ -61,36 +59,4 @@ namespace
         std::ranges::reverse(path);
         return path;
     }
-} // namespace
-
-int main()
-{
-    std::size_t n = 0;
-    std::size_t m = 0;
-    std::cin >> n >> m;
-
-    std::vector<std::vector<std::pair<std::size_t, std::uint64_t>>> adj(n);
-
-    for (std::size_t i = 0; i < m; ++i) {
-        std::size_t a = 0;
-        std::size_t b = 0;
-        std::uint64_t w = 0;
-        std::cin >> a >> b >> w;
-        --a;
-        --b;
-        adj[a].emplace_back(b, w);
-        adj[b].emplace_back(a, w);
-    }
-
-    auto path = dijkstra<VebQueue>(adj, 0, n - 1);
-
-    if (path.empty()) {
-        std::cout << -1 << "\n";
-    } else {
-        for (std::size_t x : path)
-            std::cout << x + 1 << " ";
-        std::cout << "\n";
-    }
-
-    return 0;
-}
+} // namespace dijkstra

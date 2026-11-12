@@ -10,6 +10,6 @@ meson setup build
 meson subprojects download
 meson compile -C build
 
-# Correr tests
+# Correr tests y benchmarks
 meson test -C build
 ```
